@@ -1,5 +1,6 @@
 package view;
 
+import dao.ClientDAO;
 import dao.CompteDAO;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
@@ -7,6 +8,7 @@ import javafx.scene.Scene;
 import javafx.scene.control.*;
 import javafx.scene.layout.GridPane;
 import javafx.stage.Stage;
+import model.Client;
 import model.Compte;
 
 public class ConnexionView {
@@ -59,6 +61,11 @@ public class ConnexionView {
             Compte compte = dao.findByLogin(login);
 
             if (compte != null && compte.getMdp().equals(mdp)) {
+
+                ClientDAO clientDAO = new ClientDAO();
+                Client client = clientDAO.findClientByIdUser(compte.getIdUser());
+                PagePrincipaleView principale = new PagePrincipaleView(client);
+                principale.start(AppLauncher.getPrimaryStage());
                 feedback.setText("✅ Connexion réussie !");
                 // TODO : Aller vers la page d’accueil utilisateur
             } else {
