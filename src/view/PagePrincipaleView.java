@@ -37,6 +37,11 @@ public class PagePrincipaleView {
         MenuButton menuButton = new MenuButton("Bonjour, " + client.getPrenom() + " !", null, profilItem, commandesItem, deconnexionItem);
         menuButton.setFont(Font.font(14));
 
+        // Action de déconnexion
+        deconnexionItem.setOnAction(e -> {
+            new ConnexionView().start(stage);
+        });
+
         // Panier à droite
         Button panierBtn = new Button("🛒");
         panierBtn.setFont(Font.font(16));
@@ -54,6 +59,38 @@ public class PagePrincipaleView {
 
         VBox articlesBox = new VBox(15);
         articlesBox.setPadding(new Insets(20));
+
+        // Articles simulés
+        for (int i = 1; i <= 3; i++) {
+            String nom = "Article " + i;
+            double prixUnite = 0.5 * i;
+            Double prixVrac = (i % 2 == 0) ? null : 4.0 + i;
+            int quantite = 10 * i;
+
+            VBox articleInfo = new VBox(5);
+            articleInfo.getChildren().addAll(
+                    new Label("Nom : " + nom),
+                    new Label("Prix unité : " + prixUnite + " €"),
+                    new Label((prixVrac != null) ? "Prix vrac : " + prixVrac + " €" : ""),
+                    new Label("Quantité disponible : " + quantite)
+            );
+
+            Button detailBtn = new Button("Détail");
+            Button ajouterBtn = new Button("Ajouter");
+            detailBtn.setFont(Font.font(12));
+            ajouterBtn.setFont(Font.font(12));
+
+            HBox actionsBox = new HBox(10, detailBtn, ajouterBtn);
+            actionsBox.setAlignment(Pos.CENTER_RIGHT);
+
+            HBox articleBox = new HBox(20, articleInfo, actionsBox);
+            articleBox.setPadding(new Insets(10));
+            articleBox.setStyle("-fx-border-color: lightgray; -fx-background-radius: 10; -fx-border-radius: 10;");
+            articleBox.setAlignment(Pos.CENTER_LEFT);
+            HBox.setHgrow(articleInfo, Priority.ALWAYS);
+
+            articlesBox.getChildren().add(articleBox);
+        }
 
         ScrollPane scrollPane = new ScrollPane(articlesBox);
         scrollPane.setFitToWidth(true);
