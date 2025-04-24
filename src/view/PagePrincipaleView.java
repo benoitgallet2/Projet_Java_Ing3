@@ -1,52 +1,47 @@
 package view;
 
+import dao.ArticleDAO;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Scene;
-import javafx.scene.control.Button;
-import javafx.scene.control.Label;
-import javafx.scene.control.MenuButton;
-import javafx.scene.control.MenuItem;
-import javafx.scene.control.ScrollPane;
-import javafx.scene.layout.BorderPane;
-import javafx.scene.layout.HBox;
-import javafx.scene.layout.Priority;
-import javafx.scene.layout.Region;
-import javafx.scene.layout.VBox;
+import javafx.scene.control.*;
+import javafx.scene.layout.*;
 import javafx.scene.text.Font;
 import javafx.stage.Stage;
+import model.Article;
 import model.Client;
+import javafx.scene.image.Image;
+import javafx.scene.image.ImageView;
+import java.io.ByteArrayInputStream;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.stream.Collectors;
 
 public class PagePrincipaleView {
 
     private Client client;
+    private VBox articlesBox;
+    private List<Article> tousLesArticles;
 
     public PagePrincipaleView(Client client) {
         this.client = client;
     }
 
     public void start(Stage stage) {
-        // Titre centré
         Label titreLabel = new Label("Les Bogoss");
         titreLabel.setFont(Font.font(20));
 
-        // Menu déroulant à droite
         MenuItem profilItem = new MenuItem("Profil");
         MenuItem commandesItem = new MenuItem("Commandes");
         MenuItem deconnexionItem = new MenuItem("Déconnexion");
         MenuButton menuButton = new MenuButton("Bonjour, " + client.getPrenom() + " !", null, profilItem, commandesItem, deconnexionItem);
         menuButton.setFont(Font.font(14));
+        deconnexionItem.setOnAction(e -> new ConnexionView().start(stage));
 
-        // Action de déconnexion
-        deconnexionItem.setOnAction(e -> {
-            new ConnexionView().start(stage);
-        });
-
-        // Panier à droite
         Button panierBtn = new Button("🛒");
         panierBtn.setFont(Font.font(16));
 
-        // Espaces pour alignement
         Region spacerLeft = new Region();
         Region spacerRight = new Region();
         HBox.setHgrow(spacerLeft, Priority.ALWAYS);
@@ -57,23 +52,68 @@ public class PagePrincipaleView {
         navBar.setPadding(new Insets(15));
         navBar.setStyle("-fx-background-color: #f0f0f0;");
 
-        VBox articlesBox = new VBox(15);
+        TextField searchField = new TextField();
+        searchField.setPromptText("Rechercher un article...");
+        HBox searchBox = new HBox(10, searchField);
+        searchBox.setAlignment(Pos.CENTER);
+        searchBox.setPadding(new Insets(10));
+
+        articlesBox = new VBox(15);
         articlesBox.setPadding(new Insets(20));
+        ScrollPane scrollPane = new ScrollPane(articlesBox);
+        scrollPane.setFitToWidth(true);
 
-        // Articles simulés
-        for (int i = 1; i <= 3; i++) {
-            String nom = "Article " + i;
-            double prixUnite = 0.5 * i;
-            Double prixVrac = (i % 2 == 0) ? null : 4.0 + i;
-            int quantite = 10 * i;
+        VBox content = new VBox(searchBox, scrollPane);
 
+        BorderPane root = new BorderPane();
+        root.setTop(navBar);
+        root.setCenter(content);
+
+        Scene scene = new Scene(root, 800, 600);
+        stage.setScene(scene);
+        stage.setTitle("Catalogue - Client connecté");
+        stage.show();
+
+        // Récupérer les articles de la BDD
+        tousLesArticles = new ArticleDAO().findAll();
+
+        // Affichage initial
+        afficherArticles(tousLesArticles);
+
+        // Recherche dynamique
+        searchField.textProperty().addListener((observable, oldValue, newValue) -> {
+            String search = newValue.toLowerCase();
+            List<Article> filtres = tousLesArticles.stream()
+                    .filter(a -> a.getNomArticle().toLowerCase().startsWith(search))
+                    .collect(Collectors.toList());
+            afficherArticles(filtres);
+        });
+    }
+
+    private void afficherArticles(List<Article> articles) {
+        articlesBox.getChildren().clear();
+
+        for (Article article : articles) {
+            // 🖼️ Création de l’image à partir du BLOB
+            ImageView imageView = new ImageView();
+            byte[] imageData = article.getImage();
+
+            if (imageData != null && imageData.length > 0) {
+                Image image = new Image(new ByteArrayInputStream(imageData));
+                imageView.setImage(image);
+                imageView.setFitWidth(80);
+                imageView.setFitHeight(80);
+                imageView.setPreserveRatio(true);
+            }
+
+            // 📄 Infos article
             VBox articleInfo = new VBox(5);
-            articleInfo.getChildren().addAll(
-                    new Label("Nom : " + nom),
-                    new Label("Prix unité : " + prixUnite + " €"),
-                    new Label((prixVrac != null) ? "Prix vrac : " + prixVrac + " €" : ""),
-                    new Label("Quantité disponible : " + quantite)
-            );
+            articleInfo.getChildren().add(new Label(article.getNomArticle() + " - " + article.getMarque()));
+            articleInfo.getChildren().add(new Label("Prix unité : " + article.getPrixUnite() + " €"));
+            if (article.getPrixVrac() != null && article.getPrixVrac() > 0) {
+                articleInfo.getChildren().add(new Label("Prix vrac : " + article.getPrixVrac() + " €"));
+            }
+            articleInfo.getChildren().add(new Label("Quantité disponible : " + article.getQuantiteDispo()));
 
             Button detailBtn = new Button("Détail");
             Button ajouterBtn = new Button("Ajouter");
@@ -83,7 +123,8 @@ public class PagePrincipaleView {
             HBox actionsBox = new HBox(10, detailBtn, ajouterBtn);
             actionsBox.setAlignment(Pos.CENTER_RIGHT);
 
-            HBox articleBox = new HBox(20, articleInfo, actionsBox);
+            // 💡 Mise en page avec l’image à gauche
+            HBox articleBox = new HBox(20, imageView, articleInfo, actionsBox);
             articleBox.setPadding(new Insets(10));
             articleBox.setStyle("-fx-border-color: lightgray; -fx-background-radius: 10; -fx-border-radius: 10;");
             articleBox.setAlignment(Pos.CENTER_LEFT);
@@ -91,17 +132,5 @@ public class PagePrincipaleView {
 
             articlesBox.getChildren().add(articleBox);
         }
-
-        ScrollPane scrollPane = new ScrollPane(articlesBox);
-        scrollPane.setFitToWidth(true);
-
-        BorderPane root = new BorderPane();
-        root.setTop(navBar);
-        root.setCenter(scrollPane);
-
-        Scene scene = new Scene(root, 800, 600);
-        stage.setScene(scene);
-        stage.setTitle("Catalogue - Client connecté");
-        stage.show();
     }
 }
