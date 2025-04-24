@@ -13,6 +13,7 @@ import model.Client;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import java.io.ByteArrayInputStream;
+import javafx.stage.Modality;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -89,6 +90,43 @@ public class PagePrincipaleView {
             afficherArticles(filtres);
         });
     }
+    private void afficherPopupDetail(Article article) {
+        Stage popup = new Stage();
+        popup.initOwner(articlesBox.getScene().getWindow());
+        popup.setTitle("Détail - " + article.getNomArticle());
+
+        VBox contenu = new VBox(10);
+        contenu.setPadding(new Insets(20));
+        contenu.setAlignment(Pos.CENTER);
+
+        Label titre = new Label(article.getNomArticle() + " - " + article.getMarque());
+        titre.setFont(Font.font(18));
+
+        Label description = new Label("Description : " + article.getDescription());
+        description.setWrapText(true);
+
+        Label note = new Label("Note : " + article.getNote() + " / 5");
+
+        ImageView imageView = new ImageView();
+        byte[] imageData = article.getImage();
+        if (imageData != null && imageData.length > 0) {
+            Image image = new Image(new ByteArrayInputStream(imageData));
+            imageView.setImage(image);
+            imageView.setFitWidth(200);
+            imageView.setPreserveRatio(true);
+        }
+
+        Button fermerBtn = new Button("Fermer");
+        fermerBtn.setOnAction(e -> popup.close());
+
+        contenu.getChildren().addAll(titre, imageView, description, note, fermerBtn);
+
+        Scene scene = new Scene(contenu, 350, 400);
+        popup.setScene(scene);
+        popup.initModality(Modality.WINDOW_MODAL);
+        popup.show();
+    }
+
 
     private void afficherArticles(List<Article> articles) {
         articlesBox.getChildren().clear();
@@ -119,6 +157,7 @@ public class PagePrincipaleView {
             Button ajouterBtn = new Button("Ajouter");
             detailBtn.setFont(Font.font(12));
             ajouterBtn.setFont(Font.font(12));
+            detailBtn.setOnAction(e -> afficherPopupDetail(article));
 
             HBox actionsBox = new HBox(10, detailBtn, ajouterBtn);
             actionsBox.setAlignment(Pos.CENTER_RIGHT);
