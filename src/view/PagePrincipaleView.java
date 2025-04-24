@@ -1,6 +1,7 @@
 package view;
 
 import dao.ArticleDAO;
+import dao.PanierDAO;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Scene;
@@ -13,6 +14,7 @@ import javafx.stage.Modality;
 import javafx.stage.Stage;
 import model.Article;
 import model.Client;
+import model.Panier;
 
 import java.io.ByteArrayInputStream;
 import java.util.List;
@@ -23,6 +25,10 @@ public class PagePrincipaleView {
     private final Client client;
     private VBox articlesBox;
     private List<Article> tousLesArticles;
+
+    // compteur statique
+    public static int compteurPanier = 0;
+    public static final Label compteurPanierLabel = new Label("(0)");
 
     public PagePrincipaleView(Client client) {
         this.client = client;
@@ -39,15 +45,21 @@ public class PagePrincipaleView {
         menuButton.setFont(Font.font(14));
         deconnexionItem.setOnAction(e -> new ConnexionView().start(stage));
 
+        // Panier avec compteur
         Button panierBtn = new Button("🛒");
         panierBtn.setFont(Font.font(16));
+        compteurPanierLabel.setFont(Font.font(14));
+        HBox panierBox = new HBox(5, panierBtn, compteurPanierLabel);
+        panierBox.setAlignment(Pos.CENTER_RIGHT);
+
+        panierBtn.setOnAction(e -> new PanierView(client).start(stage));
 
         Region spacerLeft = new Region();
         Region spacerRight = new Region();
         HBox.setHgrow(spacerLeft, Priority.ALWAYS);
         HBox.setHgrow(spacerRight, Priority.ALWAYS);
 
-        HBox navBar = new HBox(20, menuButton, spacerLeft, titreLabel, spacerRight, panierBtn);
+        HBox navBar = new HBox(20, menuButton, spacerLeft, titreLabel, spacerRight, panierBox);
         navBar.setAlignment(Pos.CENTER);
         navBar.setPadding(new Insets(15));
         navBar.setStyle("-fx-background-color: #f0f0f0;");
@@ -74,11 +86,14 @@ public class PagePrincipaleView {
         stage.setTitle("Catalogue - Client connecté");
         stage.show();
 
-        // Charger tous les articles depuis la base
         tousLesArticles = new ArticleDAO().findAll();
+
+        // 🟢 compteur à jour dès le chargement
+        compteurPanier = new PanierDAO().getPanierByUser(client.getIdUser()).size();
+        compteurPanierLabel.setText("(" + compteurPanier + ")");
+
         afficherArticles(tousLesArticles);
 
-        // Recherche dynamique
         searchField.textProperty().addListener((observable, oldValue, newValue) -> {
             String search = newValue.toLowerCase();
             List<Article> filtres = tousLesArticles.stream()
@@ -106,7 +121,7 @@ public class PagePrincipaleView {
         Label note = new Label("Note : " + article.getNote() + " / 5");
 
         ImageView imageView = new ImageView();
-        byte[] imageData = article.getImageBytes(); // ✅ corrigé ici
+        byte[] imageData = article.getImageBytes();
         if (imageData != null && imageData.length > 0) {
             Image image = new Image(new ByteArrayInputStream(imageData));
             imageView.setImage(image);
@@ -130,7 +145,7 @@ public class PagePrincipaleView {
 
         for (Article article : articles) {
             ImageView imageView = new ImageView();
-            byte[] imageData = article.getImageBytes(); // ✅ corrigé ici aussi
+            byte[] imageData = article.getImageBytes();
 
             if (imageData != null && imageData.length > 0) {
                 Image image = new Image(new ByteArrayInputStream(imageData));
@@ -152,7 +167,16 @@ public class PagePrincipaleView {
             Button ajouterBtn = new Button("Ajouter");
             detailBtn.setFont(Font.font(12));
             ajouterBtn.setFont(Font.font(12));
+
             detailBtn.setOnAction(e -> afficherPopupDetail(article));
+            ajouterBtn.setOnAction(e -> {
+                PanierDAO panierDAO = new PanierDAO();
+                Panier p = new Panier(client.getIdUser(), article.getIdArticle());
+                panierDAO.add(p);
+
+                compteurPanier++;
+                compteurPanierLabel.setText("(" + compteurPanier + ")");
+            });
 
             HBox actionsBox = new HBox(10, detailBtn, ajouterBtn);
             actionsBox.setAlignment(Pos.CENTER_RIGHT);
