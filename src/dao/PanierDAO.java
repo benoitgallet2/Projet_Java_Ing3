@@ -6,6 +6,8 @@ import utils.DBConnection;
 import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.HashMap;
+import java.util.Map;
 
 public class PanierDAO {
 
@@ -72,4 +74,26 @@ public class PanierDAO {
 
         return panierList;
     }
+    public Map<Integer, Integer> getQuantitesByUser(int idUser) {
+        Map<Integer, Integer> quantites = new HashMap<>();
+
+        String sql = "SELECT id_article, COUNT(*) AS quantite " +
+                "FROM Panier WHERE id_user = ? GROUP BY id_article";
+
+        try (PreparedStatement stmt = DBConnection.getConnection().prepareStatement(sql)) {
+            stmt.setInt(1, idUser);
+            ResultSet rs = stmt.executeQuery();
+
+            while (rs.next()) {
+                int idArticle = rs.getInt("id_article");
+                int quantite = rs.getInt("quantite");
+                quantites.put(idArticle, quantite);
+            }
+        } catch (SQLException e) {
+            System.err.println("❌ Erreur récupération quantités : " + e.getMessage());
+        }
+
+        return quantites;
+    }
+
 }

@@ -17,7 +17,9 @@ import model.Client;
 import model.Panier;
 
 import java.io.ByteArrayInputStream;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 public class PagePrincipaleView {
@@ -25,10 +27,9 @@ public class PagePrincipaleView {
     private final Client client;
     private VBox articlesBox;
     private List<Article> tousLesArticles;
-
-    // compteur statique
     public static int compteurPanier = 0;
     public static final Label compteurPanierLabel = new Label("(0)");
+    private final Map<Integer, Integer> quantitesAffichees = new HashMap<>();
 
     public PagePrincipaleView(Client client) {
         this.client = client;
@@ -45,13 +46,11 @@ public class PagePrincipaleView {
         menuButton.setFont(Font.font(14));
         deconnexionItem.setOnAction(e -> new ConnexionView().start(stage));
 
-        // Panier avec compteur
         Button panierBtn = new Button("🛒");
         panierBtn.setFont(Font.font(16));
         compteurPanierLabel.setFont(Font.font(14));
         HBox panierBox = new HBox(5, panierBtn, compteurPanierLabel);
         panierBox.setAlignment(Pos.CENTER_RIGHT);
-
         panierBtn.setOnAction(e -> new PanierView(client).start(stage));
 
         Region spacerLeft = new Region();
@@ -76,7 +75,6 @@ public class PagePrincipaleView {
         scrollPane.setFitToWidth(true);
 
         VBox content = new VBox(searchBox, scrollPane);
-
         BorderPane root = new BorderPane();
         root.setTop(navBar);
         root.setCenter(content);
@@ -86,23 +84,23 @@ public class PagePrincipaleView {
         stage.setTitle("Catalogue - Client connecté");
         stage.show();
 
-        tousLesArticles = new ArticleDAO().findAll();
-
-        // 🟢 compteur à jour dès le chargement
-        compteurPanier = new PanierDAO().getPanierByUser(client.getIdUser()).size();
+        PanierDAO panierDAO = new PanierDAO();
+        compteurPanier = panierDAO.getPanierByUser(client.getIdUser()).size();
         compteurPanierLabel.setText("(" + compteurPanier + ")");
+
+        tousLesArticles = new ArticleDAO().findAll();
+        Map<Integer, Integer> quantites = panierDAO.getQuantitesByUser(client.getIdUser());
+        quantitesAffichees.putAll(quantites);
 
         afficherArticles(tousLesArticles);
 
-        searchField.textProperty().addListener((observable, oldValue, newValue) -> {
-            String search = newValue.toLowerCase();
+        searchField.textProperty().addListener((obs, oldVal, newVal) -> {
             List<Article> filtres = tousLesArticles.stream()
-                    .filter(a -> a.getNomArticle().toLowerCase().startsWith(search))
+                    .filter(a -> a.getNomArticle().toLowerCase().startsWith(newVal.toLowerCase()))
                     .collect(Collectors.toList());
             afficherArticles(filtres);
         });
     }
-
     private void afficherPopupDetail(Article article) {
         Stage popup = new Stage();
         popup.initOwner(articlesBox.getScene().getWindow());
@@ -142,11 +140,16 @@ public class PagePrincipaleView {
 
     private void afficherArticles(List<Article> articles) {
         articlesBox.getChildren().clear();
+        PanierDAO panierDAO = new PanierDAO();
 
         for (Article article : articles) {
+            VBox articleInfo = new VBox(5);
+            articleInfo.getChildren().add(new Label(article.getNomArticle() + " - " + article.getMarque()));
+            articleInfo.getChildren().add(new Label("Prix unité : " + article.getPrixUnite() + " €"));
+            articleInfo.getChildren().add(new Label("Stock : " + article.getQuantiteDispo()));
+
             ImageView imageView = new ImageView();
             byte[] imageData = article.getImageBytes();
-
             if (imageData != null && imageData.length > 0) {
                 Image image = new Image(new ByteArrayInputStream(imageData));
                 imageView.setImage(image);
@@ -155,39 +158,64 @@ public class PagePrincipaleView {
                 imageView.setPreserveRatio(true);
             }
 
-            VBox articleInfo = new VBox(5);
-            articleInfo.getChildren().add(new Label(article.getNomArticle() + " - " + article.getMarque()));
-            articleInfo.getChildren().add(new Label("Prix unité : " + article.getPrixUnite() + " €"));
-            if (article.getPrixVrac() != null && article.getPrixVrac() > 0) {
-                articleInfo.getChildren().add(new Label("Prix vrac : " + article.getPrixVrac() + " €"));
-            }
-            articleInfo.getChildren().add(new Label("Quantité disponible : " + article.getQuantiteDispo()));
-
-            Button detailBtn = new Button("Détail");
             Button ajouterBtn = new Button("Ajouter");
-            detailBtn.setFont(Font.font(12));
+            Button detailBtn = new Button("Détail");
             ajouterBtn.setFont(Font.font(12));
+            detailBtn.setFont(Font.font(12));
+
+            HBox interactionBox = new HBox(10, detailBtn, ajouterBtn);
+            interactionBox.setAlignment(Pos.CENTER_RIGHT);
+
+            VBox globalBox = new VBox(5, articleInfo, interactionBox);
+            globalBox.setPadding(new Insets(10));
 
             detailBtn.setOnAction(e -> afficherPopupDetail(article));
             ajouterBtn.setOnAction(e -> {
-                PanierDAO panierDAO = new PanierDAO();
-                Panier p = new Panier(client.getIdUser(), article.getIdArticle());
-                panierDAO.add(p);
-
+                panierDAO.add(new Panier(client.getIdUser(), article.getIdArticle()));
                 compteurPanier++;
                 compteurPanierLabel.setText("(" + compteurPanier + ")");
+                quantitesAffichees.put(article.getIdArticle(), quantitesAffichees.getOrDefault(article.getIdArticle(), 0) + 1);
+                afficherArticles(tousLesArticles);
             });
 
-            HBox actionsBox = new HBox(10, detailBtn, ajouterBtn);
-            actionsBox.setAlignment(Pos.CENTER_RIGHT);
+            if (quantitesAffichees.containsKey(article.getIdArticle())) {
+                int qte = quantitesAffichees.get(article.getIdArticle());
+                Label qteLabel = new Label("Quantité : " + qte);
+                Button plus = new Button("➕");
+                Button moins = new Button("➖");
 
-            HBox articleBox = new HBox(20, imageView, articleInfo, actionsBox);
+                plus.setOnAction(e -> {
+                    panierDAO.add(new Panier(client.getIdUser(), article.getIdArticle()));
+                    compteurPanier++;
+                    quantitesAffichees.put(article.getIdArticle(), qte + 1);
+                    compteurPanierLabel.setText("(" + compteurPanier + ")");
+                    afficherArticles(tousLesArticles);
+                });
+
+                moins.setOnAction(e -> {
+                    panierDAO.remove(new Panier(client.getIdUser(), article.getIdArticle()));
+                    compteurPanier--;
+                    if (qte - 1 <= 0) {
+                        quantitesAffichees.remove(article.getIdArticle());
+                    } else {
+                        quantitesAffichees.put(article.getIdArticle(), qte - 1);
+                    }
+                    compteurPanierLabel.setText("(" + compteurPanier + ")");
+                    afficherArticles(tousLesArticles);
+                });
+
+                interactionBox.getChildren().clear();
+                interactionBox.getChildren().addAll(detailBtn, plus, qteLabel, moins);
+            }
+
+            HBox articleBox = new HBox(20, imageView, globalBox);
+            articleBox.setStyle("-fx-border-color: lightgray; -fx-border-radius: 10; -fx-background-radius: 10;");
             articleBox.setPadding(new Insets(10));
-            articleBox.setStyle("-fx-border-color: lightgray; -fx-background-radius: 10; -fx-border-radius: 10;");
             articleBox.setAlignment(Pos.CENTER_LEFT);
-            HBox.setHgrow(articleInfo, Priority.ALWAYS);
+            HBox.setHgrow(globalBox, Priority.ALWAYS);
 
             articlesBox.getChildren().add(articleBox);
         }
     }
 }
+

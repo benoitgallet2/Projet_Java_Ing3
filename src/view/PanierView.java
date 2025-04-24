@@ -14,6 +14,7 @@ import model.Client;
 import model.Panier;
 
 import java.util.List;
+import java.util.Map;
 
 public class PanierView {
 
@@ -33,7 +34,6 @@ public class PanierView {
         scrollPane.setFitToWidth(true);
         scrollPane.setPadding(new Insets(10));
 
-        // 🔙 Retour à la page principale
         Button retourBtn = new Button("Retour");
         retourBtn.setOnAction(e -> {
             PanierDAO panierDAO = new PanierDAO();
@@ -43,21 +43,18 @@ public class PanierView {
             new PagePrincipaleView(client).start(stage);
         });
 
-        // 🗑️ Bouton pour vider tout le panier
         Button viderBtn = new Button("Vider le panier");
         viderBtn.setOnAction(e -> {
             PanierDAO panierDAO = new PanierDAO();
             panierDAO.clearUserPanier(client.getIdUser());
-            afficherPanier();
-
             PagePrincipaleView.compteurPanier = 0;
             PagePrincipaleView.compteurPanierLabel.setText("(0)");
+            afficherPanier();
         });
 
-        // ✅ Bouton de validation
         Button validerBtn = new Button("Valider la commande");
         validerBtn.setOnAction(e -> {
-
+            // fonctionnalité future
         });
 
         HBox actions = new HBox(20, retourBtn, viderBtn, validerBtn);
@@ -79,38 +76,61 @@ public class PanierView {
         PanierDAO panierDAO = new PanierDAO();
         ArticleDAO articleDAO = new ArticleDAO();
 
-        List<Panier> panier = panierDAO.getPanierByUser(client.getIdUser());
+        Map<Integer, Integer> quantites = panierDAO.getQuantitesByUser(client.getIdUser());
         double total = 0;
 
-        for (Panier p : panier) {
-            Article article = articleDAO.findById(p.getIdArticle());
+        for (Map.Entry<Integer, Integer> entry : quantites.entrySet()) {
+            int idArticle = entry.getKey();
+            int quantite = entry.getValue();
+
+            Article article = articleDAO.findById(idArticle);
             if (article == null) continue;
 
-            HBox ligne = new HBox(15);
-            ligne.setPadding(new Insets(10));
-            ligne.setStyle("-fx-border-color: lightgray; -fx-background-radius: 10; -fx-border-radius: 10;");
-            ligne.setAlignment(Pos.CENTER_LEFT);
+            double prix = article.getPrixUnite() * quantite;
+            total += prix;
 
             VBox info = new VBox(5);
             info.getChildren().add(new Label(article.getNomArticle() + " - " + article.getMarque()));
-            info.getChildren().add(new Label("Prix : " + article.getPrixUnite() + " €"));
+            info.getChildren().add(new Label("Prix unité : " + article.getPrixUnite() + " €"));
+            info.getChildren().add(new Label("Quantité : " + quantite));
+            info.getChildren().add(new Label("Total : " + String.format("%.2f", prix) + " €"));
 
-            double prix = article.getPrixUnite();
-            total += prix;
-
+            Button plusBtn = new Button("➕");
+            Button moinsBtn = new Button("➖");
             Button supprimerBtn = new Button("Supprimer");
-            supprimerBtn.setOnAction(e -> {
-                panierDAO.remove(new Panier(client.getIdUser(), article.getIdArticle()));
-                afficherPanier();
 
-                // Mise à jour du compteur
-                int taille = panierDAO.getPanierByUser(client.getIdUser()).size();
-                PagePrincipaleView.compteurPanier = taille;
-                PagePrincipaleView.compteurPanierLabel.setText("(" + taille + ")");
+            plusBtn.setOnAction(e -> {
+                panierDAO.add(new Panier(client.getIdUser(), idArticle));
+                PagePrincipaleView.compteurPanier++;
+                PagePrincipaleView.compteurPanierLabel.setText("(" + PagePrincipaleView.compteurPanier + ")");
+                afficherPanier();
             });
 
-            ligne.getChildren().addAll(info, supprimerBtn);
+            moinsBtn.setOnAction(e -> {
+                panierDAO.remove(new Panier(client.getIdUser(), idArticle));
+                PagePrincipaleView.compteurPanier--;
+                PagePrincipaleView.compteurPanierLabel.setText("(" + PagePrincipaleView.compteurPanier + ")");
+                afficherPanier();
+            });
+
+            supprimerBtn.setOnAction(e -> {
+                for (int i = 0; i < quantite; i++) {
+                    panierDAO.remove(new Panier(client.getIdUser(), idArticle));
+                }
+                PagePrincipaleView.compteurPanier -= quantite;
+                PagePrincipaleView.compteurPanierLabel.setText("(" + PagePrincipaleView.compteurPanier + ")");
+                afficherPanier();
+            });
+
+            VBox boutons = new VBox(5, plusBtn, moinsBtn, supprimerBtn);
+            boutons.setAlignment(Pos.CENTER);
+
+            HBox ligne = new HBox(20, info, boutons);
+            ligne.setAlignment(Pos.CENTER_LEFT);
+            ligne.setPadding(new Insets(10));
+            ligne.setStyle("-fx-border-color: lightgray; -fx-background-radius: 10; -fx-border-radius: 10;");
             HBox.setHgrow(info, Priority.ALWAYS);
+
             panierBox.getChildren().add(ligne);
         }
 
