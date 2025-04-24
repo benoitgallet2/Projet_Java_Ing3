@@ -86,4 +86,31 @@ public class CommandeDAO {
 
         return commandes;
     }
+
+    public List<Commande> findAll() {
+        List<Commande> commandes = new ArrayList<>();
+        String sql = "SELECT * FROM Commande";
+
+        try (PreparedStatement stmt = DBConnection.getConnection().prepareStatement(sql);
+             ResultSet rs = stmt.executeQuery()) {
+
+            while (rs.next()) {
+                Commande c = new Commande(
+                        rs.getInt("id_commande"),
+                        rs.getDouble("montant"),
+                        rs.getDate("date"),
+                        rs.getInt("id_user"),
+                        rs.getObject("note_client") != null ? rs.getInt("note_client") : null,
+                        rs.getString("statut")
+                );
+                commandes.add(c);
+            }
+
+        } catch (SQLException e) {
+            System.err.println("❌ Erreur récupération de toutes les commandes : " + e.getMessage());
+        }
+
+        return commandes;
+    }
+
 }

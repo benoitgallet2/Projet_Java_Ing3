@@ -22,7 +22,6 @@ public class Client extends Compte {
     public String getPrenom() { return prenom; }
     public void setPrenom(String prenom) { this.prenom = prenom; }
 
-
     @Override
     public String toString() {
         return super.toString() + " | Client{" +

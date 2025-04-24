@@ -5,23 +5,22 @@ import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Scene;
 import javafx.scene.control.*;
+import javafx.scene.image.Image;
+import javafx.scene.image.ImageView;
 import javafx.scene.layout.*;
 import javafx.scene.text.Font;
+import javafx.stage.Modality;
 import javafx.stage.Stage;
 import model.Article;
 import model.Client;
-import javafx.scene.image.Image;
-import javafx.scene.image.ImageView;
-import java.io.ByteArrayInputStream;
-import javafx.stage.Modality;
 
-import java.util.ArrayList;
+import java.io.ByteArrayInputStream;
 import java.util.List;
 import java.util.stream.Collectors;
 
 public class PagePrincipaleView {
 
-    private Client client;
+    private final Client client;
     private VBox articlesBox;
     private List<Article> tousLesArticles;
 
@@ -75,10 +74,8 @@ public class PagePrincipaleView {
         stage.setTitle("Catalogue - Client connecté");
         stage.show();
 
-        // Récupérer les articles de la BDD
+        // Charger tous les articles depuis la base
         tousLesArticles = new ArticleDAO().findAll();
-
-        // Affichage initial
         afficherArticles(tousLesArticles);
 
         // Recherche dynamique
@@ -90,6 +87,7 @@ public class PagePrincipaleView {
             afficherArticles(filtres);
         });
     }
+
     private void afficherPopupDetail(Article article) {
         Stage popup = new Stage();
         popup.initOwner(articlesBox.getScene().getWindow());
@@ -108,7 +106,7 @@ public class PagePrincipaleView {
         Label note = new Label("Note : " + article.getNote() + " / 5");
 
         ImageView imageView = new ImageView();
-        byte[] imageData = article.getImage();
+        byte[] imageData = article.getImageBytes(); // ✅ corrigé ici
         if (imageData != null && imageData.length > 0) {
             Image image = new Image(new ByteArrayInputStream(imageData));
             imageView.setImage(image);
@@ -127,14 +125,12 @@ public class PagePrincipaleView {
         popup.show();
     }
 
-
     private void afficherArticles(List<Article> articles) {
         articlesBox.getChildren().clear();
 
         for (Article article : articles) {
-            // 🖼️ Création de l’image à partir du BLOB
             ImageView imageView = new ImageView();
-            byte[] imageData = article.getImage();
+            byte[] imageData = article.getImageBytes(); // ✅ corrigé ici aussi
 
             if (imageData != null && imageData.length > 0) {
                 Image image = new Image(new ByteArrayInputStream(imageData));
@@ -144,7 +140,6 @@ public class PagePrincipaleView {
                 imageView.setPreserveRatio(true);
             }
 
-            // 📄 Infos article
             VBox articleInfo = new VBox(5);
             articleInfo.getChildren().add(new Label(article.getNomArticle() + " - " + article.getMarque()));
             articleInfo.getChildren().add(new Label("Prix unité : " + article.getPrixUnite() + " €"));
@@ -162,7 +157,6 @@ public class PagePrincipaleView {
             HBox actionsBox = new HBox(10, detailBtn, ajouterBtn);
             actionsBox.setAlignment(Pos.CENTER_RIGHT);
 
-            // 💡 Mise en page avec l’image à gauche
             HBox articleBox = new HBox(20, imageView, articleInfo, actionsBox);
             articleBox.setPadding(new Insets(10));
             articleBox.setStyle("-fx-border-color: lightgray; -fx-background-radius: 10; -fx-border-radius: 10;");

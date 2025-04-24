@@ -1,5 +1,7 @@
 package model;
 
+import java.io.InputStream;
+
 public class Article {
     private int idArticle;
     private String nomArticle;
@@ -8,30 +10,10 @@ public class Article {
     private int moduloReduction;
     private String marque;
     private double quantiteDispo;
-    private byte[] image;
     private int note;
     private String description;
 
-    // Constructeur sans ID (utilisé avant insertion en base)
-    public Article(String nomArticle, double prixUnite, Double prixVrac, int moduloReduction,
-                   String marque, double quantiteDispo, byte[] image, int note, String description) {
-        this.nomArticle = nomArticle;
-        this.prixUnite = prixUnite;
-        this.prixVrac = prixVrac;
-        this.moduloReduction = moduloReduction;
-        this.marque = marque;
-        this.quantiteDispo = quantiteDispo;
-        this.image = image;
-        this.note = note;
-        this.description = description;
-    }
-
-    // Constructeur complet (utilisé pour récupération en base)
-    public Article(int idArticle, String nomArticle, double prixUnite, Double prixVrac, int moduloReduction,
-                   String marque, double quantiteDispo, byte[] image, int note, String description) {
-        this(nomArticle, prixUnite, prixVrac, moduloReduction, marque, quantiteDispo, image, note, description);
-        this.idArticle = idArticle;
-    }
+    private InputStream image; // image sous forme de flux binaire
 
     // Getters & Setters
     public int getIdArticle() { return idArticle; }
@@ -55,14 +37,51 @@ public class Article {
     public double getQuantiteDispo() { return quantiteDispo; }
     public void setQuantiteDispo(double quantiteDispo) { this.quantiteDispo = quantiteDispo; }
 
-    public byte[] getImage() { return image; }
-    public void setImage(byte[] image) { this.image = image; }
+    public InputStream getImageStream() {
+        return image;
+    }
+
+    public void setImageStream(InputStream image) {
+        this.image = image;
+    }
 
     public int getNote() { return note; }
     public void setNote(int note) { this.note = note; }
 
     public String getDescription() { return description; }
     public void setDescription(String description) { this.description = description; }
+
+    // Constructeur sans ID (pour insertion)
+    public Article(String nomArticle, double prixUnite, Double prixVrac, int moduloReduction,
+                   String marque, double quantiteDispo, InputStream image, int note, String description) {
+        this.nomArticle = nomArticle;
+        this.prixUnite = prixUnite;
+        this.prixVrac = prixVrac;
+        this.moduloReduction = moduloReduction;
+        this.marque = marque;
+        this.quantiteDispo = quantiteDispo;
+        this.image = image;
+        this.note = note;
+        this.description = description;
+    }
+
+    // Constructeur avec ID (récupération depuis la BDD)
+    public Article(int idArticle, String nomArticle, double prixUnite, Double prixVrac, int moduloReduction,
+                   String marque, double quantiteDispo, InputStream image, int note, String description) {
+        this(nomArticle, prixUnite, prixVrac, moduloReduction, marque, quantiteDispo, image, note, description);
+        this.idArticle = idArticle;
+    }
+
+    private byte[] imageBytes;
+
+    public byte[] getImageBytes() {
+        return imageBytes;
+    }
+
+    public void setImageBytes(byte[] imageBytes) {
+        this.imageBytes = imageBytes;
+    }
+
 
     @Override
     public String toString() {

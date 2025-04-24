@@ -57,17 +57,29 @@ public class ConnexionView {
                 return;
             }
 
-            CompteDAO dao = new CompteDAO();
-            Compte compte = dao.findByLogin(login);
+            CompteDAO compteDAO = new CompteDAO();
+            Compte compte = compteDAO.findByLogin(login);
 
             if (compte != null && compte.getMdp().equals(mdp)) {
-
-                ClientDAO clientDAO = new ClientDAO();
-                Client client = clientDAO.findClientByIdUser(compte.getIdUser());
-                PagePrincipaleView principale = new PagePrincipaleView(client);
-                principale.start(AppLauncher.getPrimaryStage());
-                feedback.setText("✅ Connexion réussie !");
-                // TODO : Aller vers la page d’accueil utilisateur
+                if (compte.isAdmin()) {
+                    // Connexion admin
+                    try {
+                        new AdminView().start(AppLauncher.getPrimaryStage());
+                        feedback.setText("✅ Connexion administrateur !");
+                    } catch (Exception ex) {
+                        ex.printStackTrace();
+                    }
+                } else {
+                    // Connexion client
+                    ClientDAO clientDAO = new ClientDAO();
+                    Client client = clientDAO.findClientByIdUser(compte.getIdUser());
+                    if (client != null) {
+                        new PagePrincipaleView(client).start(AppLauncher.getPrimaryStage());
+                        feedback.setText("✅ Connexion réussie !");
+                    } else {
+                        feedback.setText("⚠️ Ce compte n'est pas associé à un client.");
+                    }
+                }
             } else {
                 feedback.setText("⚠️ Compte introuvable. Redirection vers l'inscription...");
                 // Rediriger vers inscription après une petite pause

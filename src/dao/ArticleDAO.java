@@ -3,6 +3,7 @@ package dao;
 import model.Article;
 import utils.DBConnection;
 
+import java.io.InputStream;
 import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
@@ -14,18 +15,27 @@ public class ArticleDAO {
         String sql = "INSERT INTO Article (nom_article, prix_unite, prix_vrac, modulo_reduction, marque, " +
                 "quantite_dispo, image, note, description) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
 
-        try (PreparedStatement stmt = DBConnection.getConnection().prepareStatement(sql)) {
+        try (Connection conn = DBConnection.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+
             stmt.setString(1, article.getNomArticle());
             stmt.setDouble(2, article.getPrixUnite());
-            stmt.setObject(3, article.getPrixVrac(), Types.DOUBLE);
+            stmt.setDouble(3, article.getPrixVrac());
             stmt.setInt(4, article.getModuloReduction());
             stmt.setString(5, article.getMarque());
             stmt.setDouble(6, article.getQuantiteDispo());
-            stmt.setBytes(7, article.getImage());
+
+            if (article.getImageStream() != null) {
+                stmt.setBlob(7, article.getImageStream());
+            } else {
+                stmt.setNull(7, Types.BLOB);
+            }
+
             stmt.setInt(8, article.getNote());
             stmt.setString(9, article.getDescription());
 
             return stmt.executeUpdate() > 0;
+
         } catch (SQLException e) {
             System.err.println("❌ Erreur lors de l'insertion de l'article : " + e.getMessage());
             return false;
@@ -41,7 +51,10 @@ public class ArticleDAO {
             ResultSet rs = stmt.executeQuery();
 
             if (rs.next()) {
-                return new Article(
+                InputStream imageStream = rs.getBinaryStream("image");
+                byte[] imageBytes = rs.getBytes("image");
+
+                Article article = new Article(
                         rs.getInt("id_article"),
                         rs.getString("nom_article"),
                         rs.getDouble("prix_unite"),
@@ -49,10 +62,14 @@ public class ArticleDAO {
                         rs.getInt("modulo_reduction"),
                         rs.getString("marque"),
                         rs.getDouble("quantite_dispo"),
-                        rs.getBytes("image"),
+                        imageStream,
                         rs.getInt("note"),
                         rs.getString("description")
                 );
+
+                article.setImageBytes(imageBytes); // ✅ important
+
+                return article;
             }
         } catch (SQLException e) {
             System.err.println("❌ Erreur lors de la récupération : " + e.getMessage());
@@ -70,6 +87,9 @@ public class ArticleDAO {
             ResultSet rs = stmt.executeQuery(sql);
 
             while (rs.next()) {
+                InputStream imageStream = rs.getBinaryStream("image");
+                byte[] imageBytes = rs.getBytes("image");
+
                 Article article = new Article(
                         rs.getInt("id_article"),
                         rs.getString("nom_article"),
@@ -78,10 +98,13 @@ public class ArticleDAO {
                         rs.getInt("modulo_reduction"),
                         rs.getString("marque"),
                         rs.getDouble("quantite_dispo"),
-                        rs.getBytes("image"),
+                        imageStream,
                         rs.getInt("note"),
                         rs.getString("description")
                 );
+
+                article.setImageBytes(imageBytes); // ✅ pour affichage d’image
+
                 articles.add(article);
             }
         } catch (SQLException e) {
@@ -103,7 +126,13 @@ public class ArticleDAO {
             stmt.setInt(4, article.getModuloReduction());
             stmt.setString(5, article.getMarque());
             stmt.setDouble(6, article.getQuantiteDispo());
-            stmt.setBytes(7, article.getImage());
+
+            if (article.getImageStream() != null) {
+                stmt.setBlob(7, article.getImageStream());
+            } else {
+                stmt.setNull(7, Types.BLOB);
+            }
+
             stmt.setInt(8, article.getNote());
             stmt.setString(9, article.getDescription());
             stmt.setInt(10, article.getIdArticle());
@@ -115,4 +144,16 @@ public class ArticleDAO {
         }
     }
 
+    // DELETE : supprimer un article
+    public boolean delete(int idArticle) {
+        String sql = "DELETE FROM Article WHERE id_article = ?";
+
+        try (PreparedStatement stmt = DBConnection.getConnection().prepareStatement(sql)) {
+            stmt.setInt(1, idArticle);
+            return stmt.executeUpdate() > 0;
+        } catch (SQLException e) {
+            System.err.println("❌ Erreur lors de la suppression de l'article : " + e.getMessage());
+            return false;
+        }
+    }
 }

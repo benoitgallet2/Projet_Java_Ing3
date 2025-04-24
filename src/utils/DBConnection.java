@@ -6,35 +6,31 @@ import java.sql.SQLException;
 
 public class DBConnection {
 
-    // Informations de connexion à adapter si besoin
     private static final String URL = "jdbc:mysql://localhost:3306/bdd_shopping";
-    private static final String USER = "root"; // à adapter selon ton MySQL
-    private static final String PASSWORD = ""; // idem
+    private static final String USER = "root";
+    private static final String PASSWORD = "";
 
-    private static Connection connection;
-
-    // Méthode pour récupérer la connexion (singleton)
+    // ✅ Fournit une NOUVELLE connexion à chaque appel
     public static Connection getConnection() {
-        if (connection == null) {
-            try {
-                connection = DriverManager.getConnection(URL, USER, PASSWORD);
-                System.out.println("✅ Connexion réussie à la base de données.");
-            } catch (SQLException e) {
-                System.err.println("❌ Erreur de connexion : " + e.getMessage());
-            }
+        try {
+            Connection conn = DriverManager.getConnection(URL, USER, PASSWORD);
+            System.out.println("✅ Connexion ouverte.");
+            return conn;
+        } catch (SQLException e) {
+            System.err.println("❌ Erreur de connexion : " + e.getMessage());
+            return null;
         }
-        return connection;
     }
 
-    public static void closeConnection() {
-        if (connection != null) {
-            try {
-                connection.close();
-                connection = null;
+    // ❌ On ne gère plus de fermeture globale ici
+    public static void closeConnection(Connection conn) {
+        try {
+            if (conn != null && !conn.isClosed()) {
+                conn.close();
                 System.out.println("🔌 Connexion fermée.");
-            } catch (SQLException e) {
-                System.err.println("⚠️ Erreur lors de la fermeture : " + e.getMessage());
             }
+        } catch (SQLException e) {
+            System.err.println("⚠️ Erreur lors de la fermeture : " + e.getMessage());
         }
     }
 }
