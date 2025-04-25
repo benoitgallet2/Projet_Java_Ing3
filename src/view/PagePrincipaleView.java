@@ -51,6 +51,7 @@ public class PagePrincipaleView {
         compteurPanierLabel.setFont(Font.font(14));
         HBox panierBox = new HBox(5, panierBtn, compteurPanierLabel);
         panierBox.setAlignment(Pos.CENTER_RIGHT);
+
         panierBtn.setOnAction(e -> new PanierView(client).start(stage));
 
         Region spacerLeft = new Region();
@@ -75,6 +76,7 @@ public class PagePrincipaleView {
         scrollPane.setFitToWidth(true);
 
         VBox content = new VBox(searchBox, scrollPane);
+
         BorderPane root = new BorderPane();
         root.setTop(navBar);
         root.setCenter(content);
@@ -101,6 +103,7 @@ public class PagePrincipaleView {
             afficherArticles(filtres);
         });
     }
+
     private void afficherPopupDetail(Article article) {
         Stage popup = new Stage();
         popup.initOwner(articlesBox.getScene().getWindow());
@@ -146,7 +149,12 @@ public class PagePrincipaleView {
             VBox articleInfo = new VBox(5);
             articleInfo.getChildren().add(new Label(article.getNomArticle() + " - " + article.getMarque()));
             articleInfo.getChildren().add(new Label("Prix unité : " + article.getPrixUnite() + " €"));
-            articleInfo.getChildren().add(new Label("Stock : " + article.getQuantiteDispo()));
+
+            if (article.getPrixVrac() != null && article.getModuloReduction() > 0) {
+                double prixVracUnitaire = article.getPrixVrac() / article.getModuloReduction();
+                articleInfo.getChildren().add(new Label("Prix réduit lot de " + article.getModuloReduction()
+                        + " : " + String.format("%.2f", prixVracUnitaire) + " € / unité"));
+            }
 
             ImageView imageView = new ImageView();
             byte[] imageData = article.getImageBytes();
@@ -181,8 +189,9 @@ public class PagePrincipaleView {
             if (quantitesAffichees.containsKey(article.getIdArticle())) {
                 int qte = quantitesAffichees.get(article.getIdArticle());
                 Label qteLabel = new Label("Quantité : " + qte);
-                Button plus = new Button("➕");
                 Button moins = new Button("➖");
+                Button plus = new Button("➕");
+
 
                 plus.setOnAction(e -> {
                     panierDAO.add(new Panier(client.getIdUser(), article.getIdArticle()));
@@ -205,7 +214,7 @@ public class PagePrincipaleView {
                 });
 
                 interactionBox.getChildren().clear();
-                interactionBox.getChildren().addAll(detailBtn, plus, qteLabel, moins);
+                interactionBox.getChildren().addAll(detailBtn, moins, qteLabel, plus);
             }
 
             HBox articleBox = new HBox(20, imageView, globalBox);
@@ -218,4 +227,3 @@ public class PagePrincipaleView {
         }
     }
 }
-

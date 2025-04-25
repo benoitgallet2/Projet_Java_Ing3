@@ -54,7 +54,7 @@ public class PanierView {
 
         Button validerBtn = new Button("Valider la commande");
         validerBtn.setOnAction(e -> {
-            // fonctionnalité future
+            // À compléter plus tard
         });
 
         HBox actions = new HBox(20, retourBtn, viderBtn, validerBtn);
@@ -77,7 +77,7 @@ public class PanierView {
         ArticleDAO articleDAO = new ArticleDAO();
 
         Map<Integer, Integer> quantites = panierDAO.getQuantitesByUser(client.getIdUser());
-        double total = 0;
+        double totalGeneral = 0;
 
         for (Map.Entry<Integer, Integer> entry : quantites.entrySet()) {
             int idArticle = entry.getKey();
@@ -86,14 +86,42 @@ public class PanierView {
             Article article = articleDAO.findById(idArticle);
             if (article == null) continue;
 
-            double prix = article.getPrixUnite() * quantite;
-            total += prix;
-
             VBox info = new VBox(5);
             info.getChildren().add(new Label(article.getNomArticle() + " - " + article.getMarque()));
-            info.getChildren().add(new Label("Prix unité : " + article.getPrixUnite() + " €"));
+            info.getChildren().add(new Label("Prix unitaire : " + article.getPrixUnite() + " €"));
             info.getChildren().add(new Label("Quantité : " + quantite));
-            info.getChildren().add(new Label("Total : " + String.format("%.2f", prix) + " €"));
+
+            if (article.getPrixVrac() != null && article.getModuloReduction() > 0
+                    && quantite >= article.getModuloReduction()) {
+                Label prixVracApplique = new Label("Prix vrac appliqué");
+                prixVracApplique.setStyle("-fx-text-fill: green; -fx-font-weight: bold;");
+                info.getChildren().add(prixVracApplique);
+            }
+
+            double prixSansReduction = quantite * article.getPrixUnite();
+            double totalLigne;
+            boolean reductionActive = false;
+
+            if (article.getPrixVrac() != null && article.getModuloReduction() > 0) {
+                int packs = quantite / article.getModuloReduction();
+                int restes = quantite % article.getModuloReduction();
+                totalLigne = (packs * article.getPrixVrac()) + (restes * article.getPrixUnite());
+                reductionActive = packs > 0;
+            } else {
+                totalLigne = prixSansReduction;
+            }
+
+            if (reductionActive && prixSansReduction > totalLigne) {
+                Label promo = new Label(
+                        String.format("%.2f", prixSansReduction) + " € ➝ " + String.format("%.2f", totalLigne) + " €"
+                );
+                promo.setStyle("-fx-font-weight: bold; -fx-text-fill: green;");
+                info.getChildren().add(promo);
+            } else {
+                info.getChildren().add(new Label("Total : " + String.format("%.2f", totalLigne) + " €"));
+            }
+
+            totalGeneral += totalLigne;
 
             Button plusBtn = new Button("➕");
             Button moinsBtn = new Button("➖");
@@ -134,6 +162,6 @@ public class PanierView {
             panierBox.getChildren().add(ligne);
         }
 
-        totalLabel.setText(String.format("Total : %.2f €", total));
+        totalLabel.setText("Total : " + String.format("%.2f", totalGeneral) + " €");
     }
 }
