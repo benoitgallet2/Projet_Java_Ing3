@@ -83,19 +83,54 @@ public class CompteDAO {
 
     // ❌ Supprimer un compte par son ID
     public boolean delete(int idUser) {
-        String sql = "DELETE FROM Compte WHERE id_user = ?";
+        Connection conn = DBConnection.getConnection();
 
-        try (Connection conn = DBConnection.getConnection();
-             PreparedStatement stmt = conn.prepareStatement(sql)) {
+        try {
+            // 1. Supprimer dans Panier
+            String deletePanier = "DELETE FROM Panier WHERE id_user = ?";
+            try (PreparedStatement stmtPanier = conn.prepareStatement(deletePanier)) {
+                stmtPanier.setInt(1, idUser);
+                stmtPanier.executeUpdate();
+            }
 
-            stmt.setInt(1, idUser);
-            return stmt.executeUpdate() > 0;
+            // 2. Supprimer les lignes dans Articles_Commandes liées aux commandes du user
+            String deleteArticlesCommandes = """
+            DELETE ac FROM Articles_Commandes ac
+            JOIN Commande c ON ac.id_commande = c.id_commande
+            WHERE c.id_user = ?
+        """;
+            try (PreparedStatement stmtAC = conn.prepareStatement(deleteArticlesCommandes)) {
+                stmtAC.setInt(1, idUser);
+                stmtAC.executeUpdate();
+            }
+
+            // 3. Supprimer les Commandes
+            String deleteCommandes = "DELETE FROM Commande WHERE id_user = ?";
+            try (PreparedStatement stmtCommandes = conn.prepareStatement(deleteCommandes)) {
+                stmtCommandes.setInt(1, idUser);
+                stmtCommandes.executeUpdate();
+            }
+
+            // 4. Supprimer Client
+            String deleteClient = "DELETE FROM Client WHERE id_user = ?";
+            try (PreparedStatement stmtClient = conn.prepareStatement(deleteClient)) {
+                stmtClient.setInt(1, idUser);
+                stmtClient.executeUpdate();
+            }
+
+            // 5. Supprimer Compte
+            String deleteCompte = "DELETE FROM Compte WHERE id_user = ?";
+            try (PreparedStatement stmtCompte = conn.prepareStatement(deleteCompte)) {
+                stmtCompte.setInt(1, idUser);
+                return stmtCompte.executeUpdate() > 0;
+            }
 
         } catch (SQLException e) {
             System.err.println("❌ Erreur suppression compte : " + e.getMessage());
             return false;
         }
     }
+
 
     public boolean updateAdminStatus(int idUser, boolean isAdmin) {
         String sql = "UPDATE Compte SET admin = ? WHERE id_user = ?";

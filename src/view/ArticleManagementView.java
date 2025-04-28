@@ -25,9 +25,10 @@ public class ArticleManagementView {
         // Liste des articles
         VBox listeArticlesBox = new VBox(15);
         listeArticlesBox.setPadding(new Insets(10));
+
         ScrollPane scrollPane = new ScrollPane(listeArticlesBox);
         scrollPane.setFitToWidth(true);
-        scrollPane.setPrefWidth(500);
+        scrollPane.setPrefHeight(700);
 
         // Recherche
         TextField searchField = new TextField();
@@ -55,8 +56,7 @@ public class ArticleManagementView {
 
         // Ajouter un article
         Button btnAjouter = new Button("Ajouter un article");
-        btnAjouter.setPrefWidth(200);
-        btnAjouter.setPrefHeight(50);
+        btnAjouter.setPrefHeight(40);
         btnAjouter.setOnAction(e -> {
             try {
                 new AjoutArticleView().start(stage);
@@ -65,11 +65,14 @@ public class ArticleManagementView {
             }
         });
 
-        VBox rightBox = new VBox(30, btnAjouter);
-        rightBox.setAlignment(Pos.TOP_CENTER);
-        rightBox.setPadding(new Insets(20));
+        HBox topRight = new HBox(btnAjouter);
+        topRight.setAlignment(Pos.TOP_RIGHT);
+        topRight.setPadding(new Insets(10, 0, 0, 0));
 
-        HBox mainLayout = new HBox(20, scrollPane, rightBox);
+        VBox leftContent = new VBox(10, scrollPane);
+        leftContent.setPrefWidth(1000);
+        HBox mainLayout = new HBox(20, leftContent, topRight);
+        HBox.setHgrow(leftContent, Priority.ALWAYS);
 
         // 🔙 Bouton retour
         Button btnRetour = new Button("Retour");
@@ -80,6 +83,7 @@ public class ArticleManagementView {
                 ex.printStackTrace();
             }
         });
+
         HBox retourBox = new HBox(btnRetour);
         retourBox.setAlignment(Pos.BOTTOM_RIGHT);
         retourBox.setPadding(new Insets(0, 20, 10, 0));
@@ -91,19 +95,16 @@ public class ArticleManagementView {
         List<Article> allArticles = new ArticleDAO().findAll();
         afficherArticles(listeArticlesBox, allArticles, stage);
 
-        // Recherche en temps réel
         searchField.textProperty().addListener((obs, oldVal, newVal) -> {
             List<Article> result = filtrerArticles(allArticles, newVal, prixMaxField, marqueField, noteMinField, quantiteMinField);
             afficherArticles(listeArticlesBox, result, stage);
         });
 
-        // Filtrage par bouton
         btnFiltrer.setOnAction(e -> {
             List<Article> result = filtrerArticles(allArticles, searchField.getText(), prixMaxField, marqueField, noteMinField, quantiteMinField);
             afficherArticles(listeArticlesBox, result, stage);
         });
 
-        // Réinitialisation
         btnReset.setOnAction(e -> {
             searchField.clear();
             prixMaxField.clear();
@@ -113,11 +114,13 @@ public class ArticleManagementView {
             afficherArticles(listeArticlesBox, allArticles, stage);
         });
 
-        Scene scene = new Scene(root, 1000, 650);
+        Scene scene = new Scene(root, 1300, 800);
         stage.setScene(scene);
         stage.setTitle("Gestion des articles");
         stage.show();
     }
+
+    // ✅ autres méthodes inchangées (filtrerArticles et afficherArticles)
 
     private List<Article> filtrerArticles(List<Article> articles, String search, TextField prixMax, TextField marque, TextField noteMin, TextField quantiteMin) {
         String s = search.toLowerCase().trim();
@@ -168,8 +171,23 @@ public class ArticleManagementView {
             HBox articleBox = new HBox(10);
             articleBox.setPadding(new Insets(10));
             articleBox.setStyle("-fx-border-color: lightgray; -fx-border-radius: 5px;");
+            articleBox.setPrefWidth(1000);
+            articleBox.setMaxWidth(Double.MAX_VALUE);
 
-            Text nom = new Text(article.getNomArticle());
+            ImageView imagePreview = new ImageView();
+            try {
+                if (article.getImageBytes() != null) {
+                    Image image = new Image(new ByteArrayInputStream(article.getImageBytes()));
+                    imagePreview.setImage(image);
+                    imagePreview.setFitHeight(60);
+                    imagePreview.setPreserveRatio(true);
+                }
+            } catch (Exception ignored) {}
+
+            Label nom = new Label(article.getNomArticle());
+            nom.setWrapText(true);
+            nom.setPrefWidth(350);
+            nom.setMaxWidth(350);
             nom.setStyle("-fx-font-size: 16px;");
 
             Button btnDetail = new Button("Détail");
@@ -192,16 +210,6 @@ public class ArticleManagementView {
                     }
                 });
             });
-
-            ImageView imagePreview = new ImageView();
-            try {
-                if (article.getImageBytes() != null) {
-                    Image image = new Image(new ByteArrayInputStream(article.getImageBytes()));
-                    imagePreview.setImage(image);
-                    imagePreview.setFitHeight(60);
-                    imagePreview.setPreserveRatio(true);
-                }
-            } catch (Exception ignored) {}
 
             Region spacer = new Region();
             HBox.setHgrow(spacer, Priority.ALWAYS);

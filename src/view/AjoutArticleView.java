@@ -21,23 +21,19 @@ public class AjoutArticleView {
     private File imageFile = null;
 
     public void start(Stage stage) {
-        // Champs texte
         TextField nomField = new TextField();
         TextField prixUniteField = new TextField();
         TextField prixVracField = new TextField();
         TextField moduloField = new TextField();
         TextField marqueField = new TextField();
         TextField quantiteField = new TextField();
-        TextField noteField = new TextField();
         TextArea descriptionField = new TextArea();
 
-        // Image
         Button btnImage = new Button("Choisir une image");
         ImageView imagePreview = new ImageView();
         imagePreview.setFitHeight(100);
         imagePreview.setPreserveRatio(true);
 
-        // Action pour choisir une image
         btnImage.setOnAction(e -> {
             FileChooser fileChooser = new FileChooser();
             fileChooser.setTitle("Choisir une image");
@@ -51,12 +47,10 @@ public class AjoutArticleView {
             }
         });
 
-        // Boutons
         Button btnValider = new Button("Ajouter");
         Button btnAnnuler = new Button("Retour");
         Label feedback = new Label();
 
-        // Layout
         GridPane grid = new GridPane();
         grid.setVgap(10);
         grid.setHgap(10);
@@ -75,17 +69,14 @@ public class AjoutArticleView {
         grid.add(marqueField, 1, 4);
         grid.add(new Label("Quantité disponible:"), 0, 5);
         grid.add(quantiteField, 1, 5);
-        grid.add(new Label("Note:"), 0, 6);
-        grid.add(noteField, 1, 6);
-        grid.add(new Label("Description:"), 0, 7);
-        grid.add(descriptionField, 1, 7);
-        grid.add(btnImage, 0, 8);
-        grid.add(imagePreview, 1, 8);
-        grid.add(btnValider, 0, 9);
-        grid.add(btnAnnuler, 1, 9);
-        grid.add(feedback, 0, 10, 2, 1);
+        grid.add(new Label("Description:"), 0, 6);
+        grid.add(descriptionField, 1, 6);
+        grid.add(btnImage, 0, 7);
+        grid.add(imagePreview, 1, 7);
+        grid.add(btnValider, 0, 8);
+        grid.add(btnAnnuler, 1, 8);
+        grid.add(feedback, 0, 9, 2, 1);
 
-        // Valider
         btnValider.setOnAction(e -> {
             try {
                 InputStream imageStream = null;
@@ -101,7 +92,7 @@ public class AjoutArticleView {
                         marqueField.getText(),
                         Double.parseDouble(quantiteField.getText()),
                         imageStream,
-                        Integer.parseInt(noteField.getText()),
+                        0, // note forcée à 0
                         descriptionField.getText()
                 );
 
@@ -116,7 +107,6 @@ public class AjoutArticleView {
             }
         });
 
-        // Annuler
         btnAnnuler.setOnAction(e -> {
             try {
                 new ArticleManagementView().start(stage);
@@ -125,7 +115,6 @@ public class AjoutArticleView {
             }
         });
 
-        // Scène
         Scene scene = new Scene(grid, 600, 600);
         stage.setTitle("Ajout d’un article");
         stage.setScene(scene);

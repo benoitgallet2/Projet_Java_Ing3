@@ -146,14 +146,78 @@ public class ArticleDAO {
 
     // DELETE : supprimer un article
     public boolean delete(int idArticle) {
-        String sql = "DELETE FROM Article WHERE id_article = ?";
+        Connection conn = DBConnection.getConnection();
 
-        try (PreparedStatement stmt = DBConnection.getConnection().prepareStatement(sql)) {
-            stmt.setInt(1, idArticle);
-            return stmt.executeUpdate() > 0;
+        try {
+            // 1. Supprimer les lignes du panier
+            String deletePanier = "DELETE FROM Panier WHERE id_article = ?";
+            try (PreparedStatement stmtPanier = conn.prepareStatement(deletePanier)) {
+                stmtPanier.setInt(1, idArticle);
+                stmtPanier.executeUpdate();
+            }
+
+            // 2. Supprimer dans Articles_Commandes
+            String deleteLignes = "DELETE FROM Articles_Commandes WHERE id_article = ?";
+            try (PreparedStatement stmtLignes = conn.prepareStatement(deleteLignes)) {
+                stmtLignes.setInt(1, idArticle);
+                stmtLignes.executeUpdate();
+            }
+
+            // 3. Supprimer l'article lui-même
+            String sql = "DELETE FROM Article WHERE id_article = ?";
+            try (PreparedStatement stmtArticle = conn.prepareStatement(sql)) {
+                stmtArticle.setInt(1, idArticle);
+                return stmtArticle.executeUpdate() > 0;
+            }
+
         } catch (SQLException e) {
             System.err.println("❌ Erreur lors de la suppression de l'article : " + e.getMessage());
             return false;
         }
     }
+
+    public boolean ajouterNote(int idArticle, int noteClient) {
+        String selectNoteSql = "SELECT note FROM Article WHERE id_article = ?";
+        String countCommandeSql = "SELECT COUNT(*) FROM articles_commandes WHERE id_article = ?";
+        String updateNoteSql = "UPDATE Article SET note = ? WHERE id_article = ?";
+
+        try (Connection conn = DBConnection.getConnection()) {
+            // Récupère la note actuelle
+            int noteActuelle = 0;
+            try (PreparedStatement stmt = conn.prepareStatement(selectNoteSql)) {
+                stmt.setInt(1, idArticle);
+                ResultSet rs = stmt.executeQuery();
+                if (rs.next()) {
+                    noteActuelle = rs.getInt("note");
+                }
+            }
+
+            // Récupère le nombre de commandes de l'article
+            int nbCommandes = 0;
+            try (PreparedStatement stmt = conn.prepareStatement(countCommandeSql)) {
+                stmt.setInt(1, idArticle);
+                ResultSet rs = stmt.executeQuery();
+                if (rs.next()) {
+                    nbCommandes = rs.getInt(1);
+                }
+            }
+
+            // Calcul de la nouvelle note
+            int nouvelleNote = Math.round((noteActuelle * nbCommandes + noteClient) / (float) (nbCommandes + 1));
+
+            // Mise à jour de la note dans la table Article
+            try (PreparedStatement stmt = conn.prepareStatement(updateNoteSql)) {
+                stmt.setInt(1, nouvelleNote);
+                stmt.setInt(2, idArticle);
+                return stmt.executeUpdate() > 0;
+            }
+
+        } catch (SQLException e) {
+            System.err.println("❌ Erreur lors de la mise à jour de la note : " + e.getMessage());
+            return false;
+        }
+    }
+
+
+
 }

@@ -29,21 +29,18 @@ public class ModifierArticleView {
         grid.setVgap(10);
         grid.setHgap(10);
 
-        // Champs pré-remplis
         TextField nomField = new TextField(article.getNomArticle());
         TextField prixUniteField = new TextField(String.valueOf(article.getPrixUnite()));
         TextField prixVracField = new TextField(String.valueOf(article.getPrixVrac()));
         TextField moduloField = new TextField(String.valueOf(article.getModuloReduction()));
         TextField marqueField = new TextField(article.getMarque());
         TextField quantiteField = new TextField(String.valueOf(article.getQuantiteDispo()));
-        TextField noteField = new TextField(String.valueOf(article.getNote()));
         TextArea descField = new TextArea(article.getDescription());
 
-        // Image
         Button choisirImage = new Button("Choisir une image");
         Label imageLabel = new Label("Image actuelle conservée");
 
-        final InputStream[] imageStream = { null }; // Par défaut = pas de nouvelle image
+        final InputStream[] imageStream = { null };
 
         choisirImage.setOnAction(e -> {
             FileChooser fileChooser = new FileChooser();
@@ -60,7 +57,6 @@ public class ModifierArticleView {
             }
         });
 
-        // Feedback et boutons
         Label feedback = new Label();
         Button enregistrer = new Button("Enregistrer");
         Button annuler = new Button("Annuler");
@@ -73,14 +69,12 @@ public class ModifierArticleView {
                 article.setModuloReduction(Integer.parseInt(moduloField.getText()));
                 article.setMarque(marqueField.getText());
                 article.setQuantiteDispo(Double.parseDouble(quantiteField.getText()));
-                article.setNote(Integer.parseInt(noteField.getText()));
                 article.setDescription(descField.getText());
 
-                // 🔄 Gestion intelligente de l'image
                 if (imageStream[0] != null) {
-                    article.setImageStream(imageStream[0]); // Nouvelle image sélectionnée
+                    article.setImageStream(imageStream[0]);
                 } else if (article.getImageBytes() != null) {
-                    article.setImageStream(new ByteArrayInputStream(article.getImageBytes())); // Réutilisation de l'existante
+                    article.setImageStream(new ByteArrayInputStream(article.getImageBytes()));
                 }
 
                 boolean updated = new ArticleDAO().update(article);
@@ -99,22 +93,19 @@ public class ModifierArticleView {
 
         annuler.setOnAction(e -> new ArticleManagementView().start(stage));
 
-        // Ajout des éléments à la grille
         grid.addRow(0, new Label("Nom : "), nomField);
         grid.addRow(1, new Label("Prix à l'unité : "), prixUniteField);
         grid.addRow(2, new Label("Prix en vrac : "), prixVracField);
         grid.addRow(3, new Label("Modulo réduction : "), moduloField);
         grid.addRow(4, new Label("Marque : "), marqueField);
         grid.addRow(5, new Label("Quantité dispo : "), quantiteField);
-        grid.addRow(6, new Label("Note : "), noteField);
-        grid.addRow(7, new Label("Description : "), descField);
-        grid.addRow(8, choisirImage, imageLabel);
-        grid.addRow(9, feedback);
+        grid.addRow(6, new Label("Description : "), descField);
+        grid.addRow(7, choisirImage, imageLabel);
+        grid.addRow(8, feedback);
 
         HBox buttons = new HBox(10, enregistrer, annuler);
-        grid.add(buttons, 1, 10);
+        grid.add(buttons, 1, 9);
 
-        // Scène
         Scene scene = new Scene(grid, 500, 600);
         stage.setTitle("Modifier un article");
         stage.setScene(scene);
