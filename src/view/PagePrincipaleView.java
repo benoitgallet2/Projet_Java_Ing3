@@ -151,9 +151,7 @@ public class PagePrincipaleView {
             articleInfo.getChildren().add(new Label("Prix unité : " + article.getPrixUnite() + " €"));
 
             if (article.getPrixVrac() != null && article.getModuloReduction() > 0) {
-                double prixVracUnitaire = article.getPrixVrac() / article.getModuloReduction();
-                articleInfo.getChildren().add(new Label("Prix réduit lot de " + article.getModuloReduction()
-                        + " : " + String.format("%.2f", prixVracUnitaire) + " € / unité"));
+                articleInfo.getChildren().add(new Label("Prix réduit : " + article.getPrixVrac() + " € (à partir de " + article.getModuloReduction() + " unités)"));
             }
 
             ImageView imageView = new ImageView();

@@ -102,13 +102,11 @@ public class PanierView {
             double totalLigne;
             boolean reductionActive = false;
 
-            if (article.getPrixVrac() != null && article.getModuloReduction() > 0) {
-                int packs = quantite / article.getModuloReduction();
-                int restes = quantite % article.getModuloReduction();
-                totalLigne = (packs * article.getPrixVrac()) + (restes * article.getPrixUnite());
-                reductionActive = packs > 0;
+            if (article.getPrixVrac() != null && article.getModuloReduction() > 0 && quantite >= article.getModuloReduction()) {
+                totalLigne = quantite * article.getPrixVrac();
+                reductionActive = true;
             } else {
-                totalLigne = prixSansReduction;
+                totalLigne = quantite * article.getPrixUnite();
             }
 
             if (reductionActive && prixSansReduction > totalLigne) {
@@ -163,5 +161,12 @@ public class PanierView {
         }
 
         totalLabel.setText("Total : " + String.format("%.2f", totalGeneral) + " €");
+        if (panierBox.getChildren().isEmpty()) {
+            Label vide = new Label("Votre panier est vide");
+            vide.setFont(Font.font(18));
+            vide.setStyle("-fx-text-fill: gray;");
+            panierBox.getChildren().add(vide);
+        }
+
     }
 }
