@@ -45,6 +45,7 @@ public class PagePrincipaleView {
         MenuButton menuButton = new MenuButton("Bonjour, " + client.getPrenom() + " !", null, profilItem, commandesItem, deconnexionItem);
         menuButton.setFont(Font.font(14));
         deconnexionItem.setOnAction(e -> new ConnexionView().start(stage));
+        profilItem.setOnAction(e -> new ProfilView(client).start(stage));
 
         Button panierBtn = new Button("🛒");
         panierBtn.setFont(Font.font(16));
