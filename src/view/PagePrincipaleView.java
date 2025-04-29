@@ -17,7 +17,7 @@ import model.Client;
 import model.Panier;
 
 import java.io.ByteArrayInputStream;
-import java.util.HashMap;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -29,7 +29,13 @@ public class PagePrincipaleView {
     private List<Article> tousLesArticles;
     public static int compteurPanier = 0;
     public static final Label compteurPanierLabel = new Label("(0)");
-    private final Map<Integer, Integer> quantitesAffichees = new HashMap<>();
+    private final Map<Integer, Integer> quantitesAffichees = new java.util.HashMap<>();
+
+    private TextField searchField;
+    private TextField prixMaxField;
+    private TextField marqueField;
+    private TextField noteMinField;
+    private TextField quantiteMinField;
 
     public PagePrincipaleView(Client client) {
         this.client = client;
@@ -65,24 +71,44 @@ public class PagePrincipaleView {
         navBar.setPadding(new Insets(15));
         navBar.setStyle("-fx-background-color: #f0f0f0;");
 
-        TextField searchField = new TextField();
+        // Champs de recherche
+        searchField = new TextField();
         searchField.setPromptText("Rechercher un article...");
+
+        prixMaxField = new TextField();
+        prixMaxField.setPromptText("Prix max");
+
+        marqueField = new TextField();
+        marqueField.setPromptText("Marque contient");
+
+        noteMinField = new TextField();
+        noteMinField.setPromptText("Note min");
+
+        quantiteMinField = new TextField();
+        quantiteMinField.setPromptText("Quantité min");
+
+        Button btnFiltrer = new Button("🔍 Filtrer");
+        Button btnReset = new Button("♻️ Réinitialiser");
+
         HBox searchBox = new HBox(10, searchField);
         searchBox.setAlignment(Pos.CENTER);
         searchBox.setPadding(new Insets(10));
+
+        HBox filterBox = new HBox(10, prixMaxField, marqueField, noteMinField, quantiteMinField, btnFiltrer, btnReset);
+        filterBox.setAlignment(Pos.CENTER);
+        filterBox.setPadding(new Insets(5));
 
         articlesBox = new VBox(15);
         articlesBox.setPadding(new Insets(20));
         ScrollPane scrollPane = new ScrollPane(articlesBox);
         scrollPane.setFitToWidth(true);
 
-        VBox content = new VBox(searchBox, scrollPane);
-
+        VBox content = new VBox(searchBox, filterBox, scrollPane);
         BorderPane root = new BorderPane();
         root.setTop(navBar);
         root.setCenter(content);
 
-        Scene scene = new Scene(root, 800, 600);
+        Scene scene = new Scene(root, 1000, 700);
         stage.setScene(scene);
         stage.setTitle("Catalogue - Client connecté");
         stage.show();
@@ -92,19 +118,72 @@ public class PagePrincipaleView {
         compteurPanierLabel.setText("(" + compteurPanier + ")");
 
         tousLesArticles = new ArticleDAO().findAll();
-        Map<Integer, Integer> quantites = panierDAO.getQuantitesByUser(client.getIdUser());
+        Map<Integer, Integer> quantites = panierDAO.getPanierByUser(client.getIdUser()).stream()
+                .collect(Collectors.groupingBy(Panier::getIdArticle, Collectors.summingInt(e -> 1)));
         quantitesAffichees.putAll(quantites);
 
         afficherArticles(tousLesArticles);
 
+        // Recherche dynamique uniquement sur searchField
         searchField.textProperty().addListener((obs, oldVal, newVal) -> {
-            List<Article> filtres = tousLesArticles.stream()
-                    .filter(a -> a.getNomArticle().toLowerCase().startsWith(newVal.toLowerCase()))
+            List<Article> filtrés = tousLesArticles.stream()
+                    .filter(a -> a.getNomArticle().toLowerCase().contains(newVal.toLowerCase()) || String.valueOf(a.getIdArticle()).contains(newVal))
                     .collect(Collectors.toList());
+            afficherArticles(filtrés);
+        });
+
+        // Action filtrer et reset
+        btnFiltrer.setOnAction(e -> {
+            List<Article> filtres = filtrerArticles();
             afficherArticles(filtres);
+        });
+
+        btnReset.setOnAction(e -> {
+            searchField.clear();
+            prixMaxField.clear();
+            marqueField.clear();
+            noteMinField.clear();
+            quantiteMinField.clear();
+            afficherArticles(tousLesArticles);
         });
     }
 
+    private List<Article> filtrerArticles() {
+        List<Article> filtered = new ArrayList<>();
+
+        for (Article a : tousLesArticles) {
+            boolean match = true;
+
+            if (!prixMaxField.getText().isEmpty()) {
+                try {
+                    double max = Double.parseDouble(prixMaxField.getText());
+                    if (a.getPrixUnite() > max) match = false;
+                } catch (NumberFormatException ignored) {}
+            }
+
+            if (!marqueField.getText().isEmpty() && !a.getMarque().toLowerCase().contains(marqueField.getText().toLowerCase())) {
+                match = false;
+            }
+
+            if (!noteMinField.getText().isEmpty()) {
+                try {
+                    int min = Integer.parseInt(noteMinField.getText());
+                    if (a.getNote() < min) match = false;
+                } catch (NumberFormatException ignored) {}
+            }
+
+            if (!quantiteMinField.getText().isEmpty()) {
+                try {
+                    double min = Double.parseDouble(quantiteMinField.getText());
+                    if (a.getQuantiteDispo() < min) match = false;
+                } catch (NumberFormatException ignored) {}
+            }
+
+            if (match) filtered.add(a);
+        }
+
+        return filtered;
+    }
     private void afficherPopupDetail(Article article) {
         Stage popup = new Stage();
         popup.initOwner(articlesBox.getScene().getWindow());
@@ -155,6 +234,8 @@ public class PagePrincipaleView {
                 articleInfo.getChildren().add(new Label("Prix réduit : " + article.getPrixVrac() + " € (à partir de " + article.getModuloReduction() + " unités)"));
             }
 
+            articleInfo.getChildren().add(new Label("Quantité disponible : " + article.getQuantiteDispo()));
+
             ImageView imageView = new ImageView();
             byte[] imageData = article.getImageBytes();
             if (imageData != null && imageData.length > 0) {
@@ -190,7 +271,6 @@ public class PagePrincipaleView {
                 Label qteLabel = new Label("Quantité : " + qte);
                 Button moins = new Button("➖");
                 Button plus = new Button("➕");
-
 
                 plus.setOnAction(e -> {
                     panierDAO.add(new Panier(client.getIdUser(), article.getIdArticle()));
