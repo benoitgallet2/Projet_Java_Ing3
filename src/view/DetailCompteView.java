@@ -65,7 +65,7 @@ public class DetailCompteView {
             grid.add(new Text("Ce compte n’est pas associé à un client."), 0, row++, 2, 1);
         }
 
-        // 📦 Commandes passées
+        //📦 Commandes passées
         CommandeDAO commandeDAO = new CommandeDAO();
         List<Commande> commandes = commandeDAO.findByUser(compte.getIdUser());
 

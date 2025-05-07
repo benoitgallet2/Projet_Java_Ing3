@@ -25,6 +25,36 @@ public class ClientDAO {
         }
     }
 
+    public boolean update(Client client) {
+        String sqlClient = "UPDATE Client SET nom = ?, prenom = ? WHERE id_user = ?";
+        String sqlCompte = "UPDATE Compte SET mdp = ? WHERE id_user = ?";
+
+        try (Connection conn = DBConnection.getConnection()) {
+            // Mettre à jour nom & prénom
+            try (PreparedStatement stmtClient = conn.prepareStatement(sqlClient)) {
+                stmtClient.setString(1, client.getNom());
+                stmtClient.setString(2, client.getPrenom());
+                stmtClient.setInt(3, client.getIdUser());
+                stmtClient.executeUpdate();
+            }
+
+            // Mettre à jour mot de passe si nécessaire
+            if (client.getMdp() != null && !client.getMdp().isBlank()) {
+                try (PreparedStatement stmtCompte = conn.prepareStatement(sqlCompte)) {
+                    stmtCompte.setString(1, client.getMdp());
+                    stmtCompte.setInt(2, client.getIdUser());
+                    stmtCompte.executeUpdate();
+                }
+            }
+
+            return true;
+
+        } catch (SQLException e) {
+            System.err.println("❌ Erreur mise à jour client : " + e.getMessage());
+            return false;
+        }
+    }
+
     public Client findClientByIdUser(int idUser) {
         String sqlCompte = "SELECT * FROM Compte WHERE id_user = ?";
         String sqlClient = "SELECT nom, prenom FROM Client WHERE id_user = ?";

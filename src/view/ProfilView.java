@@ -50,21 +50,6 @@ public class ProfilView {
         grid.add(new Text("Prénom : "), 0, row);
         grid.add(new Text(client.getPrenom()), 1, row++);
 
-        // 📦 Commandes passées
-        CommandeDAO commandeDAO = new CommandeDAO();
-        List<Commande> commandes = commandeDAO.findByUser(client.getIdUser());
-
-        if (!commandes.isEmpty()) {
-            grid.add(new Text("Historique des commandes :"), 0, row++);
-            for (Commande cmd : commandes) {
-                Button btnCmd = new Button("Commande #" + cmd.getIdCommande() + " | " + cmd.getDate() + " | " + cmd.getStatut());
-                btnCmd.setOnAction(e -> new DetailCommandeView(cmd, client, () -> new ProfilView(client).start(stage)).start(stage));
-                grid.add(btnCmd, 1, row++);
-            }
-        } else {
-            grid.add(new Text("Aucune commande enregistrée."), 0, row++, 2, 1);
-        }
-
         // 🛒 Panier actuel
         PanierDAO panierDAO = new PanierDAO();
         ArticleDAO articleDAO = new ArticleDAO();
@@ -91,9 +76,8 @@ public class ProfilView {
         // ✏️ Modifier profil
         Button btnModifier = new Button("Modifier mes informations");
         btnModifier.setOnAction(e -> {
-            // À implémenter plus tard
-            // new ModifierProfilView(client).start(stage);
-            System.out.println("Ouverture de la page de modification (à faire)");
+            new ModifierProfilView(client).show(stage);
+            new ProfilView(client).start(stage);
         });
         grid.add(btnModifier, 1, row++);
 
