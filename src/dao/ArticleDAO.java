@@ -8,9 +8,19 @@ import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * DAO pour les articles.
+ * Gère les opérations de lecture, insertion, mise à jour et suppression
+ * dans la table Article de la base de données.
+ */
 public class ArticleDAO {
 
-    // INSERT : ajouter un article
+    /**
+     * Insère un nouvel article dans la base de données.
+     *
+     * @param article L'article à ajouter.
+     * @return true si l'insertion a réussi, false sinon.
+     */
     public boolean create(Article article) {
         String sql = "INSERT INTO Article (nom_article, prix_unite, prix_vrac, modulo_reduction, marque, " +
                 "quantite_dispo, image, note, description) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
@@ -37,12 +47,17 @@ public class ArticleDAO {
             return stmt.executeUpdate() > 0;
 
         } catch (SQLException e) {
-            System.err.println("❌ Erreur lors de l'insertion de l'article : " + e.getMessage());
+            System.err.println("Erreur lors de l'insertion de l'article : " + e.getMessage());
             return false;
         }
     }
 
-    // SELECT : récupérer un article par ID
+    /**
+     * Récupère un article à partir de son identifiant.
+     *
+     * @param id L'identifiant de l'article.
+     * @return L'article correspondant ou null si non trouvé.
+     */
     public Article findById(int id) {
         String sql = "SELECT * FROM Article WHERE id_article = ?";
 
@@ -67,24 +82,27 @@ public class ArticleDAO {
                         rs.getString("description")
                 );
 
-                article.setImageBytes(imageBytes); // ✅ important
-
+                article.setImageBytes(imageBytes);
                 return article;
             }
         } catch (SQLException e) {
-            System.err.println("❌ Erreur lors de la récupération : " + e.getMessage());
+            System.err.println("Erreur lors de la récupération : " + e.getMessage());
         }
 
         return null;
     }
 
-    // SELECT : récupérer tous les articles
+    /**
+     * Récupère tous les articles disponibles dans la base de données.
+     *
+     * @return Une liste d'objets Article.
+     */
     public List<Article> findAll() {
         List<Article> articles = new ArrayList<>();
         String sql = "SELECT * FROM Article";
 
-        try (Statement stmt = DBConnection.getConnection().createStatement()) {
-            ResultSet rs = stmt.executeQuery(sql);
+        try (Statement stmt = DBConnection.getConnection().createStatement();
+             ResultSet rs = stmt.executeQuery(sql)) {
 
             while (rs.next()) {
                 InputStream imageStream = rs.getBinaryStream("image");
@@ -103,18 +121,23 @@ public class ArticleDAO {
                         rs.getString("description")
                 );
 
-                article.setImageBytes(imageBytes); // ✅ pour affichage d’image
-
+                article.setImageBytes(imageBytes);
                 articles.add(article);
             }
+
         } catch (SQLException e) {
-            System.err.println("❌ Erreur lors de la récupération de tous les articles : " + e.getMessage());
+            System.err.println("Erreur lors de la récupération de tous les articles : " + e.getMessage());
         }
 
         return articles;
     }
 
-    // UPDATE : modifier un article existant
+    /**
+     * Met à jour un article existant en changeant ses données enregistrées en SQL
+     *
+     * @param article L'article avec les nouvelles valeurs.
+     * @return true si la mise à jour a réussi, false sinon.
+     */
     public boolean update(Article article) {
         String sql = "UPDATE Article SET nom_article = ?, prix_unite = ?, prix_vrac = ?, modulo_reduction = ?, " +
                 "marque = ?, quantite_dispo = ?, image = ?, note = ?, description = ? WHERE id_article = ?";
@@ -139,31 +162,33 @@ public class ArticleDAO {
 
             return stmt.executeUpdate() > 0;
         } catch (SQLException e) {
-            System.err.println("❌ Erreur lors de la mise à jour de l'article : " + e.getMessage());
+            System.err.println("Erreur lors de la mise à jour de l'article : " + e.getMessage());
             return false;
         }
     }
 
-    // DELETE : supprimer un article
+    /**
+     * Supprime un article de la base ainsi que ses dépendances dans les autres tables.
+     *
+     * @param idArticle L'identifiant de l'article à supprimer.
+     * @return true si la suppression a réussi, false sinon.
+     */
     public boolean delete(int idArticle) {
         Connection conn = DBConnection.getConnection();
 
         try {
-            // 1. Supprimer les lignes du panier
             String deletePanier = "DELETE FROM Panier WHERE id_article = ?";
             try (PreparedStatement stmtPanier = conn.prepareStatement(deletePanier)) {
                 stmtPanier.setInt(1, idArticle);
                 stmtPanier.executeUpdate();
             }
 
-            // 2. Supprimer dans Articles_Commandes
             String deleteLignes = "DELETE FROM Articles_Commandes WHERE id_article = ?";
             try (PreparedStatement stmtLignes = conn.prepareStatement(deleteLignes)) {
                 stmtLignes.setInt(1, idArticle);
                 stmtLignes.executeUpdate();
             }
 
-            // 3. Supprimer l'article lui-même
             String sql = "DELETE FROM Article WHERE id_article = ?";
             try (PreparedStatement stmtArticle = conn.prepareStatement(sql)) {
                 stmtArticle.setInt(1, idArticle);
@@ -171,18 +196,24 @@ public class ArticleDAO {
             }
 
         } catch (SQLException e) {
-            System.err.println("❌ Erreur lors de la suppression de l'article : " + e.getMessage());
+            System.err.println("Erreur lors de la suppression de l'article : " + e.getMessage());
             return false;
         }
     }
 
+    /**
+     * Met à jour la note moyenne d’un article après un avis client.
+     *
+     * @param idArticle  L'identifiant de l'article concerné.
+     * @param noteClient La note donnée par le client.
+     * @return true si la mise à jour a réussi, false sinon.
+     */
     public boolean ajouterNote(int idArticle, int noteClient) {
         String selectNoteSql = "SELECT note FROM Article WHERE id_article = ?";
-        String countCommandeSql = "SELECT COUNT(*) FROM articles_commandes WHERE id_article = ?";
+        String countCommandeSql = "SELECT COUNT(DISTINCT id_commande) FROM articles_commandes WHERE id_article = ?";
         String updateNoteSql = "UPDATE Article SET note = ? WHERE id_article = ?";
 
         try (Connection conn = DBConnection.getConnection()) {
-            // Récupère la note actuelle
             int noteActuelle = 0;
             try (PreparedStatement stmt = conn.prepareStatement(selectNoteSql)) {
                 stmt.setInt(1, idArticle);
@@ -192,7 +223,6 @@ public class ArticleDAO {
                 }
             }
 
-            // Récupère le nombre de commandes de l'article
             int nbCommandes = 0;
             try (PreparedStatement stmt = conn.prepareStatement(countCommandeSql)) {
                 stmt.setInt(1, idArticle);
@@ -202,10 +232,8 @@ public class ArticleDAO {
                 }
             }
 
-            // Calcul de la nouvelle note
             int nouvelleNote = Math.round((noteActuelle * nbCommandes + noteClient) / (float) (nbCommandes + 1));
 
-            // Mise à jour de la note dans la table Article
             try (PreparedStatement stmt = conn.prepareStatement(updateNoteSql)) {
                 stmt.setInt(1, nouvelleNote);
                 stmt.setInt(2, idArticle);
@@ -213,11 +241,8 @@ public class ArticleDAO {
             }
 
         } catch (SQLException e) {
-            System.err.println("❌ Erreur lors de la mise à jour de la note : " + e.getMessage());
+            System.err.println("Erreur lors de la mise à jour de la note : " + e.getMessage());
             return false;
         }
     }
-
-
-
 }

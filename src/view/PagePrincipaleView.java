@@ -17,11 +17,15 @@ import model.Client;
 import model.Panier;
 
 import java.io.ByteArrayInputStream;
-import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+/**
+ * Représente la page principale d’un client connecté.
+ * Affiche les articles disponibles et permet de gérer le panier client.
+ */
 public class PagePrincipaleView {
 
     private final Client client;
@@ -29,18 +33,22 @@ public class PagePrincipaleView {
     private List<Article> tousLesArticles;
     public static int compteurPanier = 0;
     public static final Label compteurPanierLabel = new Label("(0)");
-    private final Map<Integer, Integer> quantitesAffichees = new java.util.HashMap<>();
+    private final Map<Integer, Integer> quantitesAffichees = new HashMap<>();
 
-    private TextField searchField;
-    private TextField prixMaxField;
-    private TextField marqueField;
-    private TextField noteMinField;
-    private TextField quantiteMinField;
-
+    /**
+     * Constructeur avec injection du client connecté.
+     *
+     * @param client le client actuellement connecté
+     */
     public PagePrincipaleView(Client client) {
         this.client = client;
     }
 
+    /**
+     * Lance la vue de la page principale avec l’affichage des articles et du panier.
+     *
+     * @param stage la scène principale
+     */
     public void start(Stage stage) {
         Label titreLabel = new Label("Les Bogoss");
         titreLabel.setFont(Font.font(20));
@@ -50,15 +58,15 @@ public class PagePrincipaleView {
         MenuItem deconnexionItem = new MenuItem("Déconnexion");
         MenuButton menuButton = new MenuButton("Bonjour, " + client.getPrenom() + " !", null, profilItem, commandesItem, deconnexionItem);
         menuButton.setFont(Font.font(14));
-        deconnexionItem.setOnAction(e -> new ConnexionView().start(stage));
         profilItem.setOnAction(e -> new ProfilView(client).start(stage));
+        commandesItem.setOnAction(e -> new CommandesClientView(client).start(stage));
+        deconnexionItem.setOnAction(e -> new ConnexionView().start(stage));
 
         Button panierBtn = new Button("🛒");
         panierBtn.setFont(Font.font(16));
         compteurPanierLabel.setFont(Font.font(14));
         HBox panierBox = new HBox(5, panierBtn, compteurPanierLabel);
         panierBox.setAlignment(Pos.CENTER_RIGHT);
-
         panierBtn.setOnAction(e -> new PanierView(client).start(stage));
 
         Region spacerLeft = new Region();
@@ -71,44 +79,23 @@ public class PagePrincipaleView {
         navBar.setPadding(new Insets(15));
         navBar.setStyle("-fx-background-color: #f0f0f0;");
 
-        // Champs de recherche
-        searchField = new TextField();
+        TextField searchField = new TextField();
         searchField.setPromptText("Rechercher un article...");
-
-        prixMaxField = new TextField();
-        prixMaxField.setPromptText("Prix max");
-
-        marqueField = new TextField();
-        marqueField.setPromptText("Marque contient");
-
-        noteMinField = new TextField();
-        noteMinField.setPromptText("Note min");
-
-        quantiteMinField = new TextField();
-        quantiteMinField.setPromptText("Quantité min");
-
-        Button btnFiltrer = new Button("🔍 Filtrer");
-        Button btnReset = new Button("♻️ Réinitialiser");
-
         HBox searchBox = new HBox(10, searchField);
         searchBox.setAlignment(Pos.CENTER);
         searchBox.setPadding(new Insets(10));
-
-        HBox filterBox = new HBox(10, prixMaxField, marqueField, noteMinField, quantiteMinField, btnFiltrer, btnReset);
-        filterBox.setAlignment(Pos.CENTER);
-        filterBox.setPadding(new Insets(5));
 
         articlesBox = new VBox(15);
         articlesBox.setPadding(new Insets(20));
         ScrollPane scrollPane = new ScrollPane(articlesBox);
         scrollPane.setFitToWidth(true);
 
-        VBox content = new VBox(searchBox, filterBox, scrollPane);
+        VBox content = new VBox(searchBox, scrollPane);
         BorderPane root = new BorderPane();
         root.setTop(navBar);
         root.setCenter(content);
 
-        Scene scene = new Scene(root, 1000, 700);
+        Scene scene = new Scene(root, 800, 600);
         stage.setScene(scene);
         stage.setTitle("Catalogue - Client connecté");
         stage.show();
@@ -118,72 +105,22 @@ public class PagePrincipaleView {
         compteurPanierLabel.setText("(" + compteurPanier + ")");
 
         tousLesArticles = new ArticleDAO().findAll();
-        Map<Integer, Integer> quantites = panierDAO.getPanierByUser(client.getIdUser()).stream()
-                .collect(Collectors.groupingBy(Panier::getIdArticle, Collectors.summingInt(e -> 1)));
-        quantitesAffichees.putAll(quantites);
-
+        quantitesAffichees.putAll(panierDAO.getQuantitesByUser(client.getIdUser()));
         afficherArticles(tousLesArticles);
 
-        // Recherche dynamique uniquement sur searchField
         searchField.textProperty().addListener((obs, oldVal, newVal) -> {
-            List<Article> filtrés = tousLesArticles.stream()
-                    .filter(a -> a.getNomArticle().toLowerCase().contains(newVal.toLowerCase()) || String.valueOf(a.getIdArticle()).contains(newVal))
+            List<Article> filtres = tousLesArticles.stream()
+                    .filter(a -> a.getNomArticle().toLowerCase().startsWith(newVal.toLowerCase()))
                     .collect(Collectors.toList());
-            afficherArticles(filtrés);
-        });
-
-        // Action filtrer et reset
-        btnFiltrer.setOnAction(e -> {
-            List<Article> filtres = filtrerArticles();
             afficherArticles(filtres);
         });
-
-        btnReset.setOnAction(e -> {
-            searchField.clear();
-            prixMaxField.clear();
-            marqueField.clear();
-            noteMinField.clear();
-            quantiteMinField.clear();
-            afficherArticles(tousLesArticles);
-        });
     }
 
-    private List<Article> filtrerArticles() {
-        List<Article> filtered = new ArrayList<>();
-
-        for (Article a : tousLesArticles) {
-            boolean match = true;
-
-            if (!prixMaxField.getText().isEmpty()) {
-                try {
-                    double max = Double.parseDouble(prixMaxField.getText());
-                    if (a.getPrixUnite() > max) match = false;
-                } catch (NumberFormatException ignored) {}
-            }
-
-            if (!marqueField.getText().isEmpty() && !a.getMarque().toLowerCase().contains(marqueField.getText().toLowerCase())) {
-                match = false;
-            }
-
-            if (!noteMinField.getText().isEmpty()) {
-                try {
-                    int min = Integer.parseInt(noteMinField.getText());
-                    if (a.getNote() < min) match = false;
-                } catch (NumberFormatException ignored) {}
-            }
-
-            if (!quantiteMinField.getText().isEmpty()) {
-                try {
-                    double min = Double.parseDouble(quantiteMinField.getText());
-                    if (a.getQuantiteDispo() < min) match = false;
-                } catch (NumberFormatException ignored) {}
-            }
-
-            if (match) filtered.add(a);
-        }
-
-        return filtered;
-    }
+    /**
+     * Affiche les détails d’un article dans une popup.
+     *
+     * @param article l’article à afficher
+     */
     private void afficherPopupDetail(Article article) {
         Stage popup = new Stage();
         popup.initOwner(articlesBox.getScene().getWindow());
@@ -221,6 +158,11 @@ public class PagePrincipaleView {
         popup.show();
     }
 
+    /**
+     * Affiche la liste des articles avec les boutons d'interaction (ajouter, retirer...).
+     *
+     * @param articles les articles à afficher
+     */
     private void afficherArticles(List<Article> articles) {
         articlesBox.getChildren().clear();
         PanierDAO panierDAO = new PanierDAO();
@@ -233,8 +175,6 @@ public class PagePrincipaleView {
             if (article.getPrixVrac() != null && article.getModuloReduction() > 0) {
                 articleInfo.getChildren().add(new Label("Prix réduit : " + article.getPrixVrac() + " € (à partir de " + article.getModuloReduction() + " unités)"));
             }
-
-            articleInfo.getChildren().add(new Label("Quantité disponible : " + article.getQuantiteDispo()));
 
             ImageView imageView = new ImageView();
             byte[] imageData = article.getImageBytes();
@@ -259,11 +199,16 @@ public class PagePrincipaleView {
 
             detailBtn.setOnAction(e -> afficherPopupDetail(article));
             ajouterBtn.setOnAction(e -> {
-                panierDAO.add(new Panier(client.getIdUser(), article.getIdArticle()));
-                compteurPanier++;
-                compteurPanierLabel.setText("(" + compteurPanier + ")");
-                quantitesAffichees.put(article.getIdArticle(), quantitesAffichees.getOrDefault(article.getIdArticle(), 0) + 1);
-                afficherArticles(tousLesArticles);
+                int quantiteActuelle = quantitesAffichees.getOrDefault(article.getIdArticle(), 0);
+                if (quantiteActuelle < article.getQuantiteDispo()) {
+                    panierDAO.add(new Panier(client.getIdUser(), article.getIdArticle()));
+                    compteurPanier++;
+                    compteurPanierLabel.setText("(" + compteurPanier + ")");
+                    quantitesAffichees.put(article.getIdArticle(), quantiteActuelle + 1);
+                    afficherArticles(tousLesArticles);
+                } else {
+                    showAlert("Stock insuffisant pour cet article !");
+                }
             });
 
             if (quantitesAffichees.containsKey(article.getIdArticle())) {
@@ -273,11 +218,15 @@ public class PagePrincipaleView {
                 Button plus = new Button("➕");
 
                 plus.setOnAction(e -> {
-                    panierDAO.add(new Panier(client.getIdUser(), article.getIdArticle()));
-                    compteurPanier++;
-                    quantitesAffichees.put(article.getIdArticle(), qte + 1);
-                    compteurPanierLabel.setText("(" + compteurPanier + ")");
-                    afficherArticles(tousLesArticles);
+                    if (qte < article.getQuantiteDispo()) {
+                        panierDAO.add(new Panier(client.getIdUser(), article.getIdArticle()));
+                        compteurPanier++;
+                        quantitesAffichees.put(article.getIdArticle(), qte + 1);
+                        compteurPanierLabel.setText("(" + compteurPanier + ")");
+                        afficherArticles(tousLesArticles);
+                    } else {
+                        showAlert("Stock insuffisant pour cet article !");
+                    }
                 });
 
                 moins.setOnAction(e -> {
@@ -304,5 +253,18 @@ public class PagePrincipaleView {
 
             articlesBox.getChildren().add(articleBox);
         }
+    }
+
+    /**
+     * Affiche une alerte d'information.
+     *
+     * @param message le message à afficher
+     */
+    private void showAlert(String message) {
+        Alert alert = new Alert(Alert.AlertType.WARNING);
+        alert.setTitle("Stock");
+        alert.setHeaderText(null);
+        alert.setContentText(message);
+        alert.showAndWait();
     }
 }

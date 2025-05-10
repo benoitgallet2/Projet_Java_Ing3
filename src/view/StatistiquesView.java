@@ -17,8 +17,17 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * Vue JavaFX permettant d'afficher des statistiques globales sur les comptes,
+ * les commandes, les ventes et les articles les plus commandés.
+ */
 public class StatistiquesView {
 
+    /**
+     * Démarre l'affichage de la vue de statistiques globales.
+     *
+     * @param stage La fenêtre JavaFX où s'affiche la vue.
+     */
     public void start(Stage stage) {
         GridPane grid = new GridPane();
         grid.setPadding(new Insets(30));
@@ -29,19 +38,16 @@ public class StatistiquesView {
         int row = 0;
         grid.add(new Text("📊 Statistiques globales"), 0, row++, 2, 1);
 
-        // DAO init
         CompteDAO compteDAO = new CompteDAO();
         CommandeDAO commandeDAO = new CommandeDAO();
         LigneCommandeDAO ligneDAO = new LigneCommandeDAO();
         ArticleDAO articleDAO = new ArticleDAO();
 
-        // Données globales
         int nbComptes = compteDAO.findAll().size();
         int nbClients = (int) compteDAO.findAll().stream().filter(c -> !c.isAdmin()).count();
         int nbCommandes = commandeDAO.findAll().size();
         double totalVentes = commandeDAO.findAll().stream().mapToDouble(c -> c.getMontant()).sum();
 
-        // Article le plus commandé
         List<Integer> articlesCommandes = ligneDAO.getAllArticleIds();
         Map<Integer, Integer> compteur = new HashMap<>();
         for (int id : articlesCommandes) {
@@ -57,7 +63,6 @@ public class StatistiquesView {
         String topNom = (articleTop != null) ? articleTop.getNomArticle() : "Aucun";
         int topNb = compteur.getOrDefault(maxArticleId, 0);
 
-        // Affichage
         grid.add(new Text("👤 Comptes totaux : "), 0, row);
         grid.add(new Text(String.valueOf(nbComptes)), 1, row++);
 
@@ -73,9 +78,9 @@ public class StatistiquesView {
         grid.add(new Text("🏆 Article le plus commandé : "), 0, row);
         grid.add(new Text(topNom + " (" + topNb + " fois)"), 1, row++);
 
-        Button avancéesBtn = new Button("📊 Statistiques avancées");
-        avancéesBtn.setOnAction(e -> new StatistiquesAvanceesView().start(stage));
-        grid.add(avancéesBtn, 0, row++, 2, 1);
+        Button avanceesBtn = new Button("📊 Statistiques avancées");
+        avanceesBtn.setOnAction(e -> new StatistiquesAvanceesView().start(stage));
+        grid.add(avanceesBtn, 0, row++, 2, 1);
 
         Button retourBtn = new Button("Retour");
         retourBtn.setOnAction(e -> new AdminView().start(stage));

@@ -21,14 +21,28 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * Vue utilisée pour afficher les détails d’un compte client ou admin,
+ * incluant ses commandes et son panier actuel.
+ */
 public class DetailCompteView {
 
     private final Compte compte;
 
+    /**
+     * Constructeur de la vue.
+     *
+     * @param compte Le compte à afficher.
+     */
     public DetailCompteView(Compte compte) {
         this.compte = compte;
     }
 
+    /**
+     * Démarre l'affichage de la fenêtre avec les détails du compte.
+     *
+     * @param stage La fenêtre JavaFX utilisée pour l'affichage.
+     */
     public void start(Stage stage) {
         GridPane grid = new GridPane();
         grid.setPadding(new Insets(20));
@@ -38,7 +52,6 @@ public class DetailCompteView {
 
         int row = 0;
 
-        // 🧾 Infos Compte
         grid.add(new Text("ID Utilisateur : "), 0, row);
         grid.add(new Text(String.valueOf(compte.getIdUser())), 1, row++);
 
@@ -46,12 +59,11 @@ public class DetailCompteView {
         grid.add(new Text(compte.getLogin()), 1, row++);
 
         grid.add(new Text("Mot de passe : "), 0, row);
-        grid.add(new Text("********"), 1, row++); // masqué volontairement
+        grid.add(new Text("********"), 1, row++);
 
         grid.add(new Text("Statut : "), 0, row);
         grid.add(new Text(compte.isAdmin() ? "🛡️ Admin" : "👤 Non admin"), 1, row++);
 
-        // 📄 Infos Client
         ClientDAO clientDAO = new ClientDAO();
         Client client = clientDAO.findClientByIdUser(compte.getIdUser());
 
@@ -65,7 +77,6 @@ public class DetailCompteView {
             grid.add(new Text("Ce compte n’est pas associé à un client."), 0, row++, 2, 1);
         }
 
-        //📦 Commandes passées
         CommandeDAO commandeDAO = new CommandeDAO();
         List<Commande> commandes = commandeDAO.findByUser(compte.getIdUser());
 
@@ -82,7 +93,6 @@ public class DetailCompteView {
             grid.add(new Text("Aucune commande enregistrée."), 0, row++, 2, 1);
         }
 
-        // 🛒 Panier actuel regroupé
         PanierDAO panierDAO = new PanierDAO();
         ArticleDAO articleDAO = new ArticleDAO();
         List<Panier> panierList = panierDAO.getPanierByUser(compte.getIdUser());
@@ -105,7 +115,6 @@ public class DetailCompteView {
             grid.add(new Text("Panier vide."), 0, row++, 2, 1);
         }
 
-        // 🔙 Retour
         Button btnRetour = new Button("Retour");
         btnRetour.setOnAction(e -> new GestionComptesView().start(stage));
         grid.add(btnRetour, 1, row);

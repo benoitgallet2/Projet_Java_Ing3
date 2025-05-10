@@ -16,10 +16,19 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.InputStream;
 
+/**
+ * Vue pour l'ajout d'un nouvel article dans l'application.
+ * Permet à l'administrateur de saisir les informations d'un article et de l'enregistrer.
+ */
 public class AjoutArticleView {
 
     private File imageFile = null;
 
+    /**
+     * Affiche l'interface d'ajout d'un article.
+     *
+     * @param stage la fenêtre principale sur laquelle afficher la scène
+     */
     public void start(Stage stage) {
         TextField nomField = new TextField();
         TextField prixUniteField = new TextField();
@@ -92,18 +101,18 @@ public class AjoutArticleView {
                         marqueField.getText(),
                         Double.parseDouble(quantiteField.getText()),
                         imageStream,
-                        0, // note forcée à 0
+                        0,
                         descriptionField.getText()
                 );
 
                 boolean ok = new ArticleDAO().create(article);
                 if (ok) {
-                    feedback.setText("✅ Article ajouté avec succès !");
+                    feedback.setText("Article ajouté avec succès !");
                 } else {
-                    feedback.setText("❌ Échec de l'ajout.");
+                    feedback.setText("Échec de l'ajout.");
                 }
             } catch (Exception ex) {
-                feedback.setText("⚠️ Erreur : " + ex.getMessage());
+                feedback.setText("Erreur : " + ex.getMessage());
             }
         });
 

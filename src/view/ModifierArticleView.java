@@ -15,14 +15,27 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.InputStream;
 
+/**
+ * Vue JavaFX permettant de modifier les informations d’un article existant.
+ */
 public class ModifierArticleView {
 
     private final Article article;
 
+    /**
+     * Constructeur de la vue de modification.
+     *
+     * @param article l’article à modifier
+     */
     public ModifierArticleView(Article article) {
         this.article = article;
     }
 
+    /**
+     * Lance l’interface graphique de modification d’un article.
+     *
+     * @param stage la fenêtre JavaFX principale
+     */
     public void start(Stage stage) {
         GridPane grid = new GridPane();
         grid.setPadding(new Insets(20));
@@ -40,7 +53,7 @@ public class ModifierArticleView {
         Button choisirImage = new Button("Choisir une image");
         Label imageLabel = new Label("Image actuelle conservée");
 
-        final InputStream[] imageStream = { null };
+        final InputStream[] imageStream = {null};
 
         choisirImage.setOnAction(e -> {
             FileChooser fileChooser = new FileChooser();
@@ -51,7 +64,7 @@ public class ModifierArticleView {
                     imageStream[0] = new FileInputStream(file);
                     imageLabel.setText("Nouvelle image : " + file.getName());
                 } catch (Exception ex) {
-                    imageLabel.setText("❌ Erreur d’image");
+                    imageLabel.setText("Erreur d’image");
                     ex.printStackTrace();
                 }
             }
@@ -80,13 +93,13 @@ public class ModifierArticleView {
                 boolean updated = new ArticleDAO().update(article);
 
                 if (updated) {
-                    feedback.setText("✅ Article modifié !");
+                    feedback.setText("Article modifié !");
                     new ArticleManagementView().start(stage);
                 } else {
-                    feedback.setText("❌ Échec de la modification.");
+                    feedback.setText("Échec de la modification.");
                 }
             } catch (Exception ex) {
-                feedback.setText("⚠️ Erreur : " + ex.getMessage());
+                feedback.setText("Erreur : " + ex.getMessage());
                 ex.printStackTrace();
             }
         });

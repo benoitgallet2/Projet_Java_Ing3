@@ -9,9 +9,17 @@ import java.sql.ResultSet;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * DAO pour les lignes de commande (liaison entre commandes et articles).
+ */
 public class LigneCommandeDAO {
 
-    // 🔍 Récupérer tous les articles d'une commande donnée
+    /**
+     * Récupère toutes les lignes d'une commande donnée.
+     *
+     * @param idCommande L’ID de la commande.
+     * @return Liste des lignes associées à cette commande.
+     */
     public List<LigneCommande> findByCommandeId(int idCommande) {
         List<LigneCommande> lignes = new ArrayList<>();
         String sql = "SELECT * FROM Articles_Commandes WHERE id_commande = ?";
@@ -31,13 +39,19 @@ public class LigneCommandeDAO {
             }
 
         } catch (Exception e) {
-            System.err.println("❌ Erreur récupération lignes de commande : " + e.getMessage());
+            System.err.println("Erreur récupération lignes de commande : " + e.getMessage());
         }
 
         return lignes;
     }
 
-    // ➕ Ajouter une ligne de commande (article dans une commande)
+    /**
+     * Ajoute une ligne à la table Articles_Commandes.
+     *
+     * @param idCommande L’ID de la commande.
+     * @param idArticle  L’ID de l’article.
+     * @return true si l’insertion a réussi.
+     */
     public boolean addArticleToCommande(int idCommande, int idArticle) {
         String sql = "INSERT INTO Articles_Commandes (id_commande, id_article) VALUES (?, ?)";
 
@@ -49,12 +63,16 @@ public class LigneCommandeDAO {
             return stmt.executeUpdate() > 0;
 
         } catch (Exception e) {
-            System.err.println("❌ Erreur ajout article à commande : " + e.getMessage());
+            System.err.println("Erreur ajout article à commande : " + e.getMessage());
             return false;
         }
     }
 
-    // 📋 Récupérer tous les IDs d'articles commandés
+    /**
+     * Récupère tous les IDs d’articles ayant été commandés.
+     *
+     * @return Liste des IDs d’articles.
+     */
     public List<Integer> getAllArticleIds() {
         List<Integer> ids = new ArrayList<>();
         String sql = "SELECT id_article FROM Articles_Commandes";
@@ -68,13 +86,17 @@ public class LigneCommandeDAO {
             }
 
         } catch (Exception e) {
-            System.err.println("❌ Erreur récupération des articles commandés : " + e.getMessage());
+            System.err.println("Erreur récupération des articles commandés : " + e.getMessage());
         }
 
         return ids;
     }
 
-    // 🔁 Récupérer toutes les lignes de commande (nécessaire pour les alertes)
+    /**
+     * Récupère toutes les lignes de commandes existantes.
+     *
+     * @return Liste de toutes les lignes Articles_Commandes.
+     */
     public List<LigneCommande> findAll() {
         List<LigneCommande> lignes = new ArrayList<>();
         String sql = "SELECT * FROM Articles_Commandes";
@@ -92,9 +114,32 @@ public class LigneCommandeDAO {
             }
 
         } catch (Exception e) {
-            System.err.println("❌ Erreur récupération de toutes les lignes de commande : " + e.getMessage());
+            System.err.println("Erreur récupération de toutes les lignes de commande : " + e.getMessage());
         }
 
         return lignes;
+    }
+
+    /**
+     * Compte le nombre de commandes distinctes dans lesquelles un article est apparu.
+     *
+     * @param idArticle L’ID de l’article.
+     * @return Le nombre de commandes uniques contenant cet article.
+     */
+    public int countDistinctCommandesByArticle(int idArticle) {
+        String sql = "SELECT COUNT(DISTINCT id_commande) FROM Articles_Commandes WHERE id_article = ?";
+        try (Connection conn = DBConnection.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+
+            stmt.setInt(1, idArticle);
+            ResultSet rs = stmt.executeQuery();
+
+            if (rs.next()) return rs.getInt(1);
+
+        } catch (Exception e) {
+            System.err.println("Erreur comptage des commandes : " + e.getMessage());
+        }
+
+        return 0;
     }
 }

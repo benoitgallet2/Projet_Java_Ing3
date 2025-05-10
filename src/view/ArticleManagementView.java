@@ -16,13 +16,21 @@ import java.io.ByteArrayInputStream;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * Vue de gestion des articles pour les administrateurs.
+ * Permet d'afficher, filtrer, modifier, supprimer et ajouter des articles.
+ */
 public class ArticleManagementView {
 
+    /**
+     * Lance la vue de gestion des articles.
+     *
+     * @param stage la fenêtre principale
+     */
     public void start(Stage stage) {
         Text titre = new Text("🛠️ Gestion des articles");
         titre.setStyle("-fx-font-size: 18px; -fx-font-weight: bold;");
 
-        // Liste des articles
         VBox listeArticlesBox = new VBox(15);
         listeArticlesBox.setPadding(new Insets(10));
 
@@ -30,7 +38,6 @@ public class ArticleManagementView {
         scrollPane.setFitToWidth(true);
         scrollPane.setPrefHeight(700);
 
-        // Recherche
         TextField searchField = new TextField();
         searchField.setPromptText("Rechercher par nom ou ID...");
 
@@ -54,16 +61,9 @@ public class ArticleManagementView {
         searchBox.setAlignment(Pos.CENTER_LEFT);
         filterBox.setAlignment(Pos.CENTER_LEFT);
 
-        // Ajouter un article
         Button btnAjouter = new Button("Ajouter un article");
         btnAjouter.setPrefHeight(40);
-        btnAjouter.setOnAction(e -> {
-            try {
-                new AjoutArticleView().start(stage);
-            } catch (Exception ex) {
-                ex.printStackTrace();
-            }
-        });
+        btnAjouter.setOnAction(e -> new AjoutArticleView().start(stage));
 
         HBox topRight = new HBox(btnAjouter);
         topRight.setAlignment(Pos.TOP_RIGHT);
@@ -74,15 +74,8 @@ public class ArticleManagementView {
         HBox mainLayout = new HBox(20, leftContent, topRight);
         HBox.setHgrow(leftContent, Priority.ALWAYS);
 
-        // 🔙 Bouton retour
         Button btnRetour = new Button("Retour");
-        btnRetour.setOnAction(e -> {
-            try {
-                new AdminView().start(stage);
-            } catch (Exception ex) {
-                ex.printStackTrace();
-            }
-        });
+        btnRetour.setOnAction(e -> new AdminView().start(stage));
 
         HBox retourBox = new HBox(btnRetour);
         retourBox.setAlignment(Pos.BOTTOM_RIGHT);
@@ -91,7 +84,6 @@ public class ArticleManagementView {
         VBox root = new VBox(20, titre, searchBox, filterBox, mainLayout, retourBox);
         root.setPadding(new Insets(20));
 
-        // Articles
         List<Article> allArticles = new ArticleDAO().findAll();
         afficherArticles(listeArticlesBox, allArticles, stage);
 
@@ -120,8 +112,17 @@ public class ArticleManagementView {
         stage.show();
     }
 
-    // ✅ autres méthodes inchangées (filtrerArticles et afficherArticles)
-
+    /**
+     * Filtre les articles selon les champs de recherche et de filtrage.
+     *
+     * @param articles    liste d’articles à filtrer
+     * @param search      texte de recherche
+     * @param prixMax     champ prix maximum
+     * @param marque      champ de filtre sur la marque
+     * @param noteMin     champ de filtre sur la note
+     * @param quantiteMin champ de filtre sur la quantité
+     * @return liste filtrée d’articles
+     */
     private List<Article> filtrerArticles(List<Article> articles, String search, TextField prixMax, TextField marque, TextField noteMin, TextField quantiteMin) {
         String s = search.toLowerCase().trim();
         List<Article> filtered = new ArrayList<>();
@@ -164,6 +165,13 @@ public class ArticleManagementView {
         return filtered;
     }
 
+    /**
+     * Affiche dynamiquement une liste d’articles dans une VBox.
+     *
+     * @param container conteneur VBox
+     * @param articles  liste d’articles à afficher
+     * @param stage     fenêtre principale
+     */
     private void afficherArticles(VBox container, List<Article> articles, Stage stage) {
         container.getChildren().clear();
 

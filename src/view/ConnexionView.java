@@ -11,19 +11,24 @@ import javafx.stage.Stage;
 import model.Client;
 import model.Compte;
 
+/**
+ * Vue de connexion permettant à un utilisateur (admin ou client) de se connecter.
+ */
 public class ConnexionView {
 
+    /**
+     * Lance l'interface de connexion.
+     *
+     * @param stage la fenêtre principale
+     */
     public void start(Stage stage) {
-        // Champs
         TextField loginField = new TextField();
         PasswordField mdpField = new PasswordField();
 
         Button btnConnexion = new Button("Connexion");
         Button btnRetour = new Button("Retour");
-
         Label feedback = new Label();
 
-        // Layout
         GridPane grid = new GridPane();
         grid.setAlignment(Pos.CENTER);
         grid.setPadding(new Insets(20));
@@ -38,7 +43,6 @@ public class ConnexionView {
         grid.add(btnRetour, 1, 2);
         grid.add(feedback, 0, 3, 2, 1);
 
-        // Bouton retour
         btnRetour.setOnAction(e -> {
             try {
                 AppLauncher.showAccueil();
@@ -47,13 +51,12 @@ public class ConnexionView {
             }
         });
 
-        // Bouton connexion
         btnConnexion.setOnAction(e -> {
             String login = loginField.getText();
             String mdp = mdpField.getText();
 
             if (login.isBlank() || mdp.isBlank()) {
-                feedback.setText("❌ Veuillez remplir tous les champs.");
+                feedback.setText("Veuillez remplir tous les champs.");
                 return;
             }
 
@@ -62,27 +65,24 @@ public class ConnexionView {
 
             if (compte != null && compte.getMdp().equals(mdp)) {
                 if (compte.isAdmin()) {
-                    // Connexion admin
                     try {
                         new AdminView().start(AppLauncher.getPrimaryStage());
-                        feedback.setText("✅ Connexion administrateur !");
+                        feedback.setText("Connexion administrateur !");
                     } catch (Exception ex) {
                         ex.printStackTrace();
                     }
                 } else {
-                    // Connexion client
                     ClientDAO clientDAO = new ClientDAO();
                     Client client = clientDAO.findClientByIdUser(compte.getIdUser());
                     if (client != null) {
                         new PagePrincipaleView(client).start(AppLauncher.getPrimaryStage());
-                        feedback.setText("✅ Connexion réussie !");
+                        feedback.setText("Connexion réussie !");
                     } else {
-                        feedback.setText("⚠️ Ce compte n'est pas associé à un client.");
+                        feedback.setText("Ce compte n'est pas associé à un client.");
                     }
                 }
             } else {
-                feedback.setText("⚠️ Compte introuvable. Redirection vers l'inscription...");
-                // Rediriger vers inscription après une petite pause
+                feedback.setText("Compte introuvable. Redirection vers l'inscription...");
                 new Thread(() -> {
                     try {
                         Thread.sleep(1500);

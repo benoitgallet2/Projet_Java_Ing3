@@ -13,8 +13,17 @@ import model.Compte;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * Vue de gestion des comptes dans l’interface d’administration.
+ * Permet de consulter, rechercher, modifier le rôle ou supprimer un compte utilisateur.
+ */
 public class GestionComptesView {
 
+    /**
+     * Lance l’affichage de la page de gestion des comptes.
+     *
+     * @param stage La scène principale JavaFX.
+     */
     public void start(Stage stage) {
         Text titre = new Text("👥 Gestion des comptes");
         titre.setStyle("-fx-font-size: 18px; -fx-font-weight: bold;");
@@ -42,7 +51,7 @@ public class GestionComptesView {
         List<Compte> allComptes = new CompteDAO().findAll();
         afficherComptes(listeComptesBox, allComptes, stage);
 
-        // 🔎 Recherche dynamique
+        // Recherche dynamique
         searchField.textProperty().addListener((obs, oldVal, newVal) -> {
             String search = newVal.trim().toLowerCase();
             List<Compte> filtered = new ArrayList<>();
@@ -59,6 +68,13 @@ public class GestionComptesView {
         stage.show();
     }
 
+    /**
+     * Affiche la liste des comptes dans l’interface.
+     *
+     * @param container Le conteneur VBox où afficher les comptes.
+     * @param comptes   La liste des comptes à afficher.
+     * @param stage     La scène pour la navigation.
+     */
     private void afficherComptes(VBox container, List<Compte> comptes, Stage stage) {
         container.getChildren().clear();
 
@@ -76,12 +92,12 @@ public class GestionComptesView {
             Button btnDetail = new Button("Détail");
             Button btnSupprimer = new Button("Supprimer");
 
-            // Action : changer rôle admin
+            // Changer le statut admin
             btnChangerRole.setOnAction(e -> {
                 boolean nouveauStatut = !compte.isAdmin();
                 boolean updated = new CompteDAO().updateAdminStatus(compte.getIdUser(), nouveauStatut);
                 if (updated) {
-                    new GestionComptesView().start(stage); // refresh
+                    new GestionComptesView().start(stage);
                 } else {
                     Alert error = new Alert(Alert.AlertType.ERROR);
                     error.setTitle("Erreur");
@@ -94,7 +110,7 @@ public class GestionComptesView {
                 new DetailCompteView(compte).start(stage);
             });
 
-            // Action : suppression
+            // Supprimer un compte
             btnSupprimer.setOnAction(e -> {
                 Alert confirm = new Alert(Alert.AlertType.CONFIRMATION);
                 confirm.setTitle("Confirmation");
@@ -105,7 +121,7 @@ public class GestionComptesView {
                     if (response == ButtonType.OK) {
                         boolean deleted = new CompteDAO().delete(compte.getIdUser());
                         if (deleted) {
-                            new GestionComptesView().start(stage); // refresh
+                            new GestionComptesView().start(stage);
                         } else {
                             Alert error = new Alert(Alert.AlertType.ERROR);
                             error.setTitle("Erreur");

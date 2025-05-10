@@ -20,14 +20,27 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * Vue du profil client affichant les informations personnelles et le contenu actuel du panier.
+ */
 public class ProfilView {
 
     private final Client client;
 
+    /**
+     * Constructeur de la vue du profil.
+     *
+     * @param client le client connecté
+     */
     public ProfilView(Client client) {
         this.client = client;
     }
 
+    /**
+     * Démarre l'affichage de la vue du profil utilisateur.
+     *
+     * @param stage la fenêtre actuelle
+     */
     public void start(Stage stage) {
         GridPane grid = new GridPane();
         grid.setPadding(new Insets(20));
@@ -37,12 +50,12 @@ public class ProfilView {
 
         int row = 0;
 
-        // 🧾 Informations du compte
+        // Informations de compte
         grid.add(new Text("Login : "), 0, row);
         grid.add(new Text(client.getLogin()), 1, row++);
 
         grid.add(new Text("Mot de passe : "), 0, row);
-        grid.add(new Text("********"), 1, row++);
+        grid.add(new Text("********"), 1, row++); // Masqué volontairement
 
         grid.add(new Text("Nom : "), 0, row);
         grid.add(new Text(client.getNom()), 1, row++);
@@ -50,7 +63,7 @@ public class ProfilView {
         grid.add(new Text("Prénom : "), 0, row);
         grid.add(new Text(client.getPrenom()), 1, row++);
 
-        // 🛒 Panier actuel
+        // Affichage du panier actuel
         PanierDAO panierDAO = new PanierDAO();
         ArticleDAO articleDAO = new ArticleDAO();
         List<Panier> panierList = panierDAO.getPanierByUser(client.getIdUser());
@@ -73,15 +86,15 @@ public class ProfilView {
             grid.add(new Text("Panier vide."), 0, row++, 2, 1);
         }
 
-        // ✏️ Modifier profil
+        // Modifier profil
         Button btnModifier = new Button("Modifier mes informations");
         btnModifier.setOnAction(e -> {
             new ModifierProfilView(client).show(stage);
-            new ProfilView(client).start(stage);
+            new ProfilView(client).start(stage); // rafraîchir la vue
         });
         grid.add(btnModifier, 1, row++);
 
-        // 🔙 Retour
+        // Retour à la page principale
         Button btnRetour = new Button("Retour");
         btnRetour.setOnAction(e -> new PagePrincipaleView(client).start(stage));
         grid.add(btnRetour, 1, row++);

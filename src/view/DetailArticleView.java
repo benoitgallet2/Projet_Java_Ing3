@@ -13,14 +13,27 @@ import model.Article;
 
 import java.io.ByteArrayInputStream;
 
+/**
+ * Vue permettant d'afficher les détails d'un article pour l'administrateur.
+ */
 public class DetailArticleView {
 
     private final Article article;
 
+    /**
+     * Constructeur prenant l'article à afficher.
+     *
+     * @param article l'article sélectionné
+     */
     public DetailArticleView(Article article) {
         this.article = article;
     }
 
+    /**
+     * Lance l'affichage de la vue de détail de l'article.
+     *
+     * @param stage la fenêtre principale
+     */
     public void start(Stage stage) {
         GridPane grid = new GridPane();
         grid.setVgap(10);
@@ -52,7 +65,6 @@ public class DetailArticleView {
         grid.add(new Text("Description : "), 0, 7);
         grid.add(new Text(article.getDescription()), 1, 7);
 
-        // ✅ Affichage de l'image à partir de byte[]
         if (article.getImageBytes() != null) {
             try {
                 Image image = new Image(new ByteArrayInputStream(article.getImageBytes()));
@@ -62,13 +74,12 @@ public class DetailArticleView {
                 grid.add(new Text("Image : "), 0, 8);
                 grid.add(imageView, 1, 8);
             } catch (Exception e) {
-                System.err.println("⚠️ Erreur d'affichage d'image : " + e.getMessage());
+                System.err.println("Erreur d'affichage d'image : " + e.getMessage());
             }
         }
 
         Button btnRetour = new Button("Retour");
         btnRetour.setOnAction(e -> new ArticleManagementView().start(stage));
-
         grid.add(btnRetour, 1, 9);
 
         Scene scene = new Scene(grid, 500, 600);

@@ -13,11 +13,20 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
+/**
+ * Vue pour la gestion des promotions des articles.
+ * Permet aux administrateurs de modifier les prix en vrac et les modulos de réduction.
+ */
 public class GestionPromotionsView {
 
     private VBox articlesBox;
     private List<Article> allArticles;
 
+    /**
+     * Affiche la vue de gestion des promotions.
+     *
+     * @param stage la fenêtre JavaFX courante
+     */
     public void start(Stage stage) {
         VBox root = new VBox(20);
         root.setPadding(new Insets(20));
@@ -25,7 +34,6 @@ public class GestionPromotionsView {
         Label titre = new Label("🎯 Gestion des Promotions");
         titre.setStyle("-fx-font-size: 18px; -fx-font-weight: bold;");
 
-        // 🔍 Barre de recherche
         TextField searchField = new TextField();
         searchField.setPromptText("Rechercher un article par nom ou marque...");
         HBox searchBox = new HBox(searchField);
@@ -39,7 +47,6 @@ public class GestionPromotionsView {
         allArticles = dao.findAll();
         afficherArticles(allArticles, dao);
 
-        // 🔁 Recherche dynamique
         searchField.textProperty().addListener((obs, oldVal, newVal) -> {
             String lower = newVal.toLowerCase();
             List<Article> filtres = allArticles.stream()
@@ -60,6 +67,12 @@ public class GestionPromotionsView {
         stage.show();
     }
 
+    /**
+     * Affiche les articles sous forme de panneaux avec leurs options de promotion.
+     *
+     * @param articles la liste des articles à afficher
+     * @param dao      l’objet DAO pour enregistrer les modifications
+     */
     private void afficherArticles(List<Article> articles, ArticleDAO dao) {
         articlesBox.getChildren().clear();
 
@@ -96,7 +109,9 @@ public class GestionPromotionsView {
             grid.add(actions, 0, row++, 2, 1);
             grid.add(simulation, 0, row++, 2, 1);
 
-            // 🧮 LOGIQUE SIMULATION
+            /**
+             * Gère la simulation de promotion selon la quantité saisie.
+             */
             btnCalculer.setOnAction(e -> {
                 try {
                     int qte = Integer.parseInt(quantiteField.getText());
@@ -110,21 +125,23 @@ public class GestionPromotionsView {
 
                     simulation.setText("💰 Montant estimé : " + String.format("%.2f", total) + " €");
                 } catch (Exception ex) {
-                    simulation.setText("⚠️ Erreur de saisie.");
+                    simulation.setText("Erreur de saisie.");
                 }
             });
 
-            // ✅ APPLIQUER PROMO
+            /**
+             * Applique la promotion au produit sélectionné.
+             */
             btnAppliquer.setOnAction(e -> {
                 try {
                     article.setModuloReduction(Integer.parseInt(modField.getText()));
                     article.setPrixVrac(Double.parseDouble(vracField.getText()));
 
                     boolean ok = dao.update(article);
-                    if (ok) simulation.setText("✅ Promotion enregistrée !");
-                    else simulation.setText("❌ Échec de la mise à jour.");
+                    if (ok) simulation.setText("Promotion enregistrée !");
+                    else simulation.setText("Échec de la mise à jour.");
                 } catch (Exception ex) {
-                    simulation.setText("⚠️ Erreur de saisie.");
+                    simulation.setText("Erreur de saisie.");
                 }
             });
 

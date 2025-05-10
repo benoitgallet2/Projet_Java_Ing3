@@ -11,10 +11,18 @@ import javafx.stage.Stage;
 import model.Client;
 import model.Compte;
 
+/**
+ * Vue JavaFX permettant à un nouvel utilisateur de s’inscrire.
+ * Cette vue gère la création du compte et du client associé.
+ */
 public class InscriptionView {
 
+    /**
+     * Affiche l’interface d’inscription pour les nouveaux utilisateurs.
+     *
+     * @param stage la fenêtre principale de l’application
+     */
     public void start(Stage stage) {
-        // Champs du formulaire
         TextField loginField = new TextField();
         PasswordField mdpField = new PasswordField();
         TextField nomField = new TextField();
@@ -25,7 +33,6 @@ public class InscriptionView {
 
         Label feedback = new Label();
 
-        // Layout du formulaire
         GridPane form = new GridPane();
         form.setVgap(10);
         form.setHgap(10);
@@ -44,7 +51,6 @@ public class InscriptionView {
         form.add(retourBtn, 1, 4);
         form.add(feedback, 0, 5, 2, 1);
 
-        // Action : retour accueil
         retourBtn.setOnAction(e -> {
             try {
                 AppLauncher.showAccueil();
@@ -53,7 +59,6 @@ public class InscriptionView {
             }
         });
 
-        // Action : inscription
         validerBtn.setOnAction(e -> {
             String login = loginField.getText();
             String mdp = mdpField.getText();
@@ -61,36 +66,33 @@ public class InscriptionView {
             String prenom = prenomField.getText();
 
             if (login.isBlank() || mdp.isBlank() || nom.isBlank() || prenom.isBlank()) {
-                feedback.setText("❌ Tous les champs sont obligatoires.");
+                feedback.setText("Tous les champs sont obligatoires.");
                 return;
             }
 
             CompteDAO compteDAO = new CompteDAO();
             ClientDAO clientDAO = new ClientDAO();
 
-            // Vérification : login déjà existant
             Compte existing = compteDAO.findByLogin(login);
             if (existing != null) {
-                feedback.setText("⚠️ Ce login est déjà utilisé.");
+                feedback.setText("Ce login est déjà utilisé.");
                 return;
             }
 
-            // Création du compte (admin = false)
             Compte compte = new Compte(login, mdp, false);
             int idUser = compteDAO.create(compte);
 
             if (idUser != -1) {
-                // Création client
                 Client client = new Client(new Compte(idUser, login, mdp, false), nom, prenom);
                 boolean ok = clientDAO.create(client);
 
                 if (ok) {
-                    feedback.setText("✅ Inscription réussie !");
+                    feedback.setText("Inscription réussie !");
                 } else {
-                    feedback.setText("⚠️ Compte créé mais client non enregistré !");
+                    feedback.setText("Compte créé mais client non enregistré !");
                 }
             } else {
-                feedback.setText("❌ Erreur lors de la création du compte.");
+                feedback.setText("Erreur lors de la création du compte.");
             }
         });
 

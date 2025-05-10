@@ -12,12 +12,21 @@ import model.Article;
 import java.util.List;
 import java.util.stream.Collectors;
 
+/**
+ * Vue JavaFX permettant à l'administrateur de gérer les stocks des articles.
+ * Il peut rechercher, filtrer et modifier les quantités disponibles.
+ */
 public class GestionStocksView {
 
     private VBox articlesBox;
     private List<Article> allArticles;
-    private ArticleDAO dao = new ArticleDAO();
+    private final ArticleDAO dao = new ArticleDAO();
 
+    /**
+     * Affiche la page de gestion des stocks.
+     *
+     * @param stage la fenêtre principale JavaFX
+     */
     public void start(Stage stage) {
         VBox root = new VBox(20);
         root.setPadding(new Insets(20));
@@ -45,7 +54,6 @@ public class GestionStocksView {
         allArticles = dao.findAll();
         afficherArticles(allArticles);
 
-        // 🔁 Filtres dynamiques
         searchField.textProperty().addListener((obs, oldVal, newVal) -> updateFiltrage(searchField.getText(), onlyLowStock.isSelected()));
         onlyLowStock.setOnAction(e -> updateFiltrage(searchField.getText(), onlyLowStock.isSelected()));
 
@@ -55,6 +63,12 @@ public class GestionStocksView {
         stage.show();
     }
 
+    /**
+     * Met à jour l'affichage des articles selon les filtres sélectionnés.
+     *
+     * @param search        le texte recherché
+     * @param lowStockOnly  true si l'on veut afficher uniquement les articles avec un stock faible
+     */
     private void updateFiltrage(String search, boolean lowStockOnly) {
         String lower = search.toLowerCase();
         List<Article> filtrés = allArticles.stream()
@@ -65,6 +79,11 @@ public class GestionStocksView {
         afficherArticles(filtrés);
     }
 
+    /**
+     * Affiche une liste d’articles avec leurs champs de modification de stock.
+     *
+     * @param articles la liste des articles à afficher
+     */
     private void afficherArticles(List<Article> articles) {
         articlesBox.getChildren().clear();
 
@@ -76,6 +95,7 @@ public class GestionStocksView {
             grid.setStyle("-fx-border-color: lightgray; -fx-border-radius: 8px;");
 
             int row = 0;
+
             Label nom = new Label("🛒 " + article.getNomArticle() + " - " + article.getMarque());
             nom.setStyle("-fx-font-weight: bold;");
             grid.add(nom, 0, row++, 2, 1);
@@ -92,13 +112,12 @@ public class GestionStocksView {
                     double newQte = Double.parseDouble(qteField.getText());
                     article.setQuantiteDispo(newQte);
                     boolean ok = dao.update(article);
-                    feedback.setText(ok ? "✅ Mis à jour !" : "❌ Erreur.");
+                    feedback.setText(ok ? "Mis à jour !" : "Erreur.");
                 } catch (Exception ex) {
-                    feedback.setText("⚠️ Saisie invalide.");
+                    feedback.setText("Saisie invalide.");
                 }
             });
 
-            // Style visuel si stock critique
             double stock = article.getQuantiteDispo();
             if (stock < 5) {
                 grid.setStyle(grid.getStyle() + "-fx-background-color: #ffe6e6;");

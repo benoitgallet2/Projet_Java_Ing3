@@ -12,20 +12,28 @@ import javafx.stage.Stage;
 import model.Commande;
 import model.Compte;
 
-import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Collectors;
 
+/**
+ * Vue JavaFX permettant à l'administrateur de consulter l'historique
+ * des achats passés par les utilisateurs.
+ */
 public class HistoriqueAchatsView {
 
     private List<Commande> commandes;
-    private CompteDAO compteDAO = new CompteDAO();
+    private final CompteDAO compteDAO = new CompteDAO();
     private GridPane grid;
     private TextField searchLogin;
     private ComboBox<String> filterStatut;
     private ComboBox<String> triCombo;
 
+    /**
+     * Affiche la vue principale d’historique des commandes.
+     *
+     * @param stage la fenêtre principale
+     */
     public void start(Stage stage) {
         CommandeDAO commandeDAO = new CommandeDAO();
         commandes = commandeDAO.findAll();
@@ -33,7 +41,6 @@ public class HistoriqueAchatsView {
         VBox root = new VBox(15);
         root.setPadding(new Insets(20));
 
-        // 🔍 Barre de recherche & filtres
         searchLogin = new TextField();
         searchLogin.setPromptText("Rechercher un login client...");
         searchLogin.setMinWidth(200);
@@ -49,7 +56,6 @@ public class HistoriqueAchatsView {
         HBox filters = new HBox(15, new Text("Filtrer par :"), searchLogin, filterStatut, triCombo);
         filters.setAlignment(Pos.CENTER_LEFT);
 
-        // 📄 Tableau des commandes
         grid = new GridPane();
         grid.setPadding(new Insets(10));
         grid.setHgap(10);
@@ -59,7 +65,6 @@ public class HistoriqueAchatsView {
         ScrollPane scrollPane = new ScrollPane(grid);
         scrollPane.setFitToWidth(true);
 
-        // 🔙 Bouton retour
         Button btnRetour = new Button("Retour");
         btnRetour.setOnAction(e -> new AdminView().start(stage));
         HBox bottom = new HBox(btnRetour);
@@ -67,7 +72,6 @@ public class HistoriqueAchatsView {
 
         root.getChildren().addAll(new Text("🧾 Historique des commandes"), filters, scrollPane, bottom);
 
-        // 🔁 Réactivité des filtres et tris
         searchLogin.textProperty().addListener((obs, oldVal, newVal) -> updateGrid());
         filterStatut.setOnAction(e -> updateGrid());
         triCombo.setOnAction(e -> updateGrid());
@@ -80,6 +84,9 @@ public class HistoriqueAchatsView {
         stage.show();
     }
 
+    /**
+     * Met à jour l'affichage du tableau des commandes en fonction des filtres et tris sélectionnés.
+     */
     private void updateGrid() {
         grid.getChildren().clear();
 
@@ -89,13 +96,12 @@ public class HistoriqueAchatsView {
         grid.add(new Text("Montant"), 2, row);
         grid.add(new Text("Client"), 3, row);
         grid.add(new Text("Statut"), 4, row);
-        grid.add(new Text(""), 5, row++); // Pour bouton
+        grid.add(new Text(""), 5, row++); // Colonne pour le bouton
 
         String search = searchLogin.getText().trim().toLowerCase();
         String statut = filterStatut.getValue();
         String tri = triCombo.getValue();
 
-        // 🔍 Filtres
         List<Commande> filtered = commandes.stream()
                 .filter(c -> {
                     Compte compte = compteDAO.findById(c.getIdUser());
@@ -105,20 +111,11 @@ public class HistoriqueAchatsView {
                 })
                 .collect(Collectors.toList());
 
-        // 🔽 Tri
         switch (tri) {
-            case "Date ⬇️":
-                filtered.sort(Comparator.comparing(Commande::getDate).reversed());
-                break;
-            case "Date ⬆️":
-                filtered.sort(Comparator.comparing(Commande::getDate));
-                break;
-            case "Montant ⬇️":
-                filtered.sort(Comparator.comparing(Commande::getMontant).reversed());
-                break;
-            case "Montant ⬆️":
-                filtered.sort(Comparator.comparing(Commande::getMontant));
-                break;
+            case "Date ⬇️" -> filtered.sort(Comparator.comparing(Commande::getDate).reversed());
+            case "Date ⬆️" -> filtered.sort(Comparator.comparing(Commande::getDate));
+            case "Montant ⬇️" -> filtered.sort(Comparator.comparing(Commande::getMontant).reversed());
+            case "Montant ⬆️" -> filtered.sort(Comparator.comparing(Commande::getMontant));
         }
 
         for (Commande c : filtered) {
@@ -135,7 +132,6 @@ public class HistoriqueAchatsView {
                 Stage currentStage = (Stage) ((Button) e.getSource()).getScene().getWindow();
                 new DetailCommandeView(c, compte, () -> start(currentStage)).start(currentStage);
             });
-
 
             grid.add(btnDetail, 5, row++);
         }

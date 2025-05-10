@@ -8,10 +8,19 @@ import javafx.scene.layout.*;
 import javafx.scene.text.Text;
 import javafx.stage.Stage;
 
+/**
+ * Vue principale du panneau d'administration.
+ * Permet d'accéder aux différentes sections de gestion de l'application.
+ * Présente tous les boutons redirigeant vers les fonctionnalités administrateur
+ */
 public class AdminView {
 
+    /**
+     * Lance la vue du panneau d'administration.
+     *
+     * @param stage la fenêtre principale à afficher
+     */
     public void start(Stage stage) {
-        // 🔔 Bouton de notifications
         Button notifBtn = new Button("🔔");
         notifBtn.setOnAction(e -> new NotificationView().showAlertWindow(stage));
         notifBtn.setStyle("-fx-font-size: 14px;");
@@ -20,7 +29,6 @@ public class AdminView {
         topBar.setAlignment(Pos.TOP_RIGHT);
         topBar.setPadding(new Insets(10, 20, 0, 0));
 
-        // 🎛️ Titre
         Text titre = new Text("🎛️ Panneau d'administration");
         titre.setStyle("-fx-font-size: 18px; -fx-font-weight: bold;");
 

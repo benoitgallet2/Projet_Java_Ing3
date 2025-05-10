@@ -18,8 +18,20 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
+/**
+ * Classe permettant d'afficher une fenêtre de notifications pour l'administrateur.
+ * Les alertes concernent :
+ * - les articles avec un stock faible,
+ * - les articles jamais commandés,
+ * - les commandes non finalisées (statut autre que "Payé" ou "Livré").
+ */
 public class NotificationView {
 
+    /**
+     * Affiche une fenêtre modale contenant les alertes en cours.
+     *
+     * @param parentStage la fenêtre principale (admin)
+     */
     public void showAlertWindow(Stage parentStage) {
         Stage popup = new Stage();
         popup.initOwner(parentStage);
@@ -29,16 +41,17 @@ public class NotificationView {
         VBox alertBox = new VBox(15);
         alertBox.setPadding(new Insets(20));
 
-        // ⚠️ Alerte : stock faible
         ArticleDAO articleDAO = new ArticleDAO();
         List<Article> articles = articleDAO.findAll();
+
+        // Stock faible
         for (Article a : articles) {
             if (a.getQuantiteDispo() < 5) {
-                alertBox.getChildren().add(new Label("⚠️ Stock faible : " + a.getNomArticle() + " (dispo : " + a.getQuantiteDispo() + ")"));
+                alertBox.getChildren().add(new Label("Stock faible : " + a.getNomArticle() + " (dispo : " + a.getQuantiteDispo() + ")"));
             }
         }
 
-        // ⚠️ Alerte : article jamais commandé
+        // Articles jamais commandés
         LigneCommandeDAO ligneDAO = new LigneCommandeDAO();
         Set<Integer> articlesCommandes = new HashSet<>();
         for (LigneCommande l : ligneDAO.findAll()) {
@@ -47,21 +60,23 @@ public class NotificationView {
 
         for (Article a : articles) {
             if (!articlesCommandes.contains(a.getIdArticle())) {
-                alertBox.getChildren().add(new Label("📭 Jamais commandé : " + a.getNomArticle()));
+                alertBox.getChildren().add(new Label("Jamais commandé : " + a.getNomArticle()));
             }
         }
 
-        // ⚠️ Alerte : commandes en attente
+        // Commandes non finalisées
         CommandeDAO commandeDAO = new CommandeDAO();
         List<Commande> commandes = commandeDAO.findAll();
         for (Commande c : commandes) {
-            if (!c.getStatut().equalsIgnoreCase("Payé") && !c.getStatut().equalsIgnoreCase("Livré")) {
-                alertBox.getChildren().add(new Label("📦 Commande #" + c.getIdCommande() + " (" + c.getStatut() + ")"));
+            String statut = c.getStatut().toLowerCase();
+            if (!statut.equals("payé") && !statut.equals("livré")) {
+                alertBox.getChildren().add(new Label("Commande #" + c.getIdCommande() + " (" + c.getStatut() + ")"));
             }
         }
 
+        // Aucun problème
         if (alertBox.getChildren().isEmpty()) {
-            alertBox.getChildren().add(new Label("✅ Aucune alerte. Tout est sous contrôle !"));
+            alertBox.getChildren().add(new Label("Aucune alerte. Tout est sous contrôle !"));
         }
 
         ScrollPane scrollPane = new ScrollPane(alertBox);

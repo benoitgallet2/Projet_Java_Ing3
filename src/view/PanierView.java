@@ -16,16 +16,29 @@ import model.Panier;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * Vue du panier client, permettant de consulter, modifier ou valider la commande.
+ */
 public class PanierView {
 
     private final Client client;
     private final VBox panierBox = new VBox(10);
     private final Label totalLabel = new Label("Total : 0.00 €");
 
+    /**
+     * Constructeur principal du panier.
+     *
+     * @param client le client connecté
+     */
     public PanierView(Client client) {
         this.client = client;
     }
 
+    /**
+     * Lance l'affichage de la vue du panier.
+     *
+     * @param stage fenêtre principale
+     */
     public void start(Stage stage) {
         Label titre = new Label("Votre panier");
         titre.setFont(Font.font(20));
@@ -54,7 +67,13 @@ public class PanierView {
 
         Button validerBtn = new Button("Valider la commande");
         validerBtn.setOnAction(e -> {
-            // À compléter plus tard
+            double total = getTotalPanier();
+            if (total > 0) {
+                new ValidationCommandeView(client, total).start(stage);
+            } else {
+                Alert alert = new Alert(Alert.AlertType.WARNING, "Votre panier est vide !");
+                alert.showAndWait();
+            }
         });
 
         HBox actions = new HBox(20, retourBtn, viderBtn, validerBtn);
@@ -71,6 +90,10 @@ public class PanierView {
         afficherPanier();
     }
 
+    /**
+     * Affiche dynamiquement les articles présents dans le panier avec leur quantité,
+     * leurs boutons de modification, et met à jour le total.
+     */
     private void afficherPanier() {
         panierBox.getChildren().clear();
         PanierDAO panierDAO = new PanierDAO();
@@ -82,7 +105,6 @@ public class PanierView {
         for (Map.Entry<Integer, Integer> entry : quantites.entrySet()) {
             int idArticle = entry.getKey();
             int quantite = entry.getValue();
-
             Article article = articleDAO.findById(idArticle);
             if (article == null) continue;
 
@@ -91,13 +113,6 @@ public class PanierView {
             info.getChildren().add(new Label("Prix unitaire : " + article.getPrixUnite() + " €"));
             info.getChildren().add(new Label("Quantité : " + quantite));
 
-            if (article.getPrixVrac() != null && article.getModuloReduction() > 0
-                    && quantite >= article.getModuloReduction()) {
-                Label prixVracApplique = new Label("Prix vrac appliqué");
-                prixVracApplique.setStyle("-fx-text-fill: green; -fx-font-weight: bold;");
-                info.getChildren().add(prixVracApplique);
-            }
-
             double prixSansReduction = quantite * article.getPrixUnite();
             double totalLigne;
             boolean reductionActive = false;
@@ -105,8 +120,11 @@ public class PanierView {
             if (article.getPrixVrac() != null && article.getModuloReduction() > 0 && quantite >= article.getModuloReduction()) {
                 totalLigne = quantite * article.getPrixVrac();
                 reductionActive = true;
+                Label promo = new Label("Prix vrac appliqué");
+                promo.setStyle("-fx-text-fill: green; -fx-font-weight: bold;");
+                info.getChildren().add(promo);
             } else {
-                totalLigne = quantite * article.getPrixUnite();
+                totalLigne = prixSansReduction;
             }
 
             if (reductionActive && prixSansReduction > totalLigne) {
@@ -126,10 +144,14 @@ public class PanierView {
             Button supprimerBtn = new Button("Supprimer");
 
             plusBtn.setOnAction(e -> {
-                panierDAO.add(new Panier(client.getIdUser(), idArticle));
-                PagePrincipaleView.compteurPanier++;
-                PagePrincipaleView.compteurPanierLabel.setText("(" + PagePrincipaleView.compteurPanier + ")");
-                afficherPanier();
+                if (quantite < article.getQuantiteDispo()) {
+                    panierDAO.add(new Panier(client.getIdUser(), idArticle));
+                    PagePrincipaleView.compteurPanier++;
+                    PagePrincipaleView.compteurPanierLabel.setText("(" + PagePrincipaleView.compteurPanier + ")");
+                    afficherPanier();
+                } else {
+                    showAlert("Stock insuffisant pour cet article !");
+                }
             });
 
             moinsBtn.setOnAction(e -> {
@@ -161,12 +183,52 @@ public class PanierView {
         }
 
         totalLabel.setText("Total : " + String.format("%.2f", totalGeneral) + " €");
+
         if (panierBox.getChildren().isEmpty()) {
             Label vide = new Label("Votre panier est vide");
             vide.setFont(Font.font(18));
             vide.setStyle("-fx-text-fill: gray;");
             panierBox.getChildren().add(vide);
         }
+    }
 
+    /**
+     * Calcule le total actuel du panier en prenant en compte les réductions.
+     *
+     * @return le montant total en euros
+     */
+    private double getTotalPanier() {
+        double total = 0;
+        PanierDAO panierDAO = new PanierDAO();
+        ArticleDAO articleDAO = new ArticleDAO();
+        Map<Integer, Integer> quantites = panierDAO.getQuantitesByUser(client.getIdUser());
+
+        for (Map.Entry<Integer, Integer> entry : quantites.entrySet()) {
+            int idArticle = entry.getKey();
+            int quantite = entry.getValue();
+            Article article = articleDAO.findById(idArticle);
+            if (article == null) continue;
+
+            if (article.getPrixVrac() != null && article.getModuloReduction() > 0 && quantite >= article.getModuloReduction()) {
+                total += quantite * article.getPrixVrac();
+            } else {
+                total += quantite * article.getPrixUnite();
+            }
+        }
+
+        return total;
+    }
+
+    /**
+     * Affiche une alerte graphique à l'utilisateur.
+     *
+     * @param message texte de l'alerte
+     */
+    private void showAlert(String message) {
+        Alert alert = new Alert(Alert.AlertType.WARNING);
+        alert.setTitle("Stock");
+        alert.setHeaderText(null);
+        alert.setContentText(message);
+        alert.showAndWait();
     }
 }

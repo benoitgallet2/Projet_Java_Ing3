@@ -10,14 +10,27 @@ import javafx.stage.Modality;
 import javafx.stage.Stage;
 import model.Client;
 
+/**
+ * Vue JavaFX permettant à un client de modifier ses informations personnelles.
+ */
 public class ModifierProfilView {
 
     private final Client client;
 
+    /**
+     * Constructeur de la vue.
+     *
+     * @param client le client connecté
+     */
     public ModifierProfilView(Client client) {
         this.client = client;
     }
 
+    /**
+     * Affiche une fenêtre modale permettant de modifier le profil du client.
+     *
+     * @param parentStage la fenêtre principale (appelante)
+     */
     public void show(Stage parentStage) {
         Stage popup = new Stage();
         popup.initModality(Modality.APPLICATION_MODAL);
@@ -31,7 +44,6 @@ public class ModifierProfilView {
 
         TextField nomField = new TextField(client.getNom());
         TextField prenomField = new TextField(client.getPrenom());
-
         PasswordField mdpField = new PasswordField();
         PasswordField mdpConfirmField = new PasswordField();
 
@@ -76,7 +88,6 @@ public class ModifierProfilView {
                 return;
             }
 
-            // Mise à jour
             client.setNom(nom);
             client.setPrenom(prenom);
             if (!mdp.isEmpty()) {
@@ -85,8 +96,7 @@ public class ModifierProfilView {
 
             new ClientDAO().update(client);
 
-
-            successLabel.setText("Modifié avec succès ✅");
+            successLabel.setText("Modifié avec succès");
             successLabel.setVisible(true);
         });
 
